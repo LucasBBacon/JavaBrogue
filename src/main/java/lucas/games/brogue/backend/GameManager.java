@@ -1,5 +1,6 @@
 package lucas.games.brogue.backend;
 
+import lucas.games.brogue.backend.entities.Creature;
 import lucas.games.brogue.backend.entities.Entity;
 import lucas.games.brogue.backend.entities.Inventory;
 import lucas.games.brogue.backend.entities.Player;
@@ -137,18 +138,24 @@ public class GameManager {
         // occupant check (attack logic could go here)
         // Only check collision if we are moving a "Blocker" (like the Player)
         // TODO: Implement throwing items, items might fly over entities
-        if (!(entity instanceof Item)) {
-            if (targetTile.hasOccupant()) {
-                if (entity == player) log("Blocked by " + targetTile.getOccupant());
-                return false; // bumped into someone
+        if (!(entity instanceof Item) && targetTile.hasOccupant()) {
+            Entity occupant = targetTile.getOccupant();
+
+            // Player attacks monster
+            if (entity == player && occupant instanceof Creature) {
+                handleCombat(player, (Creature) occupant);
+                processTurn(); // Attacking counts as a turn
+                return true; // bumped into someone
             }
 
+            return false; // Monster bumping into monster
+        }
+
+        // Move logic
+        if (!(entity instanceof Item)) {
             // Move the occupant reference
             currentTile.setOccupant(null);
             targetTile.setOccupant(entity);
-        } else {
-            // Moving an item (e.g. throwing/dropping)
-            // TODO: Implement item stacking logic if needed
         }
 
         // update entity internal position
@@ -160,6 +167,26 @@ public class GameManager {
         }
 
         return true;
+    }
+
+    private void handleCombat(Player attacker, Creature target) {
+        int damage = attacker.getDamage();
+        target.takeDamage(damage);
+
+        log("You hit the " + target.getName() + " for " + damage + " damage.");
+
+        if (target.isDead()) {
+            log ("The " + target.getName() + " dies.");
+
+            // Remove from grid
+            Tile tile = dungeonLevel.getTile(target.getPosition());
+            if (tile.getOccupant() == target) {
+                tile.setOccupant(null);
+            }
+
+            // Remove from entity list
+            entities.remove(target);
+        }
     }
 
     /**

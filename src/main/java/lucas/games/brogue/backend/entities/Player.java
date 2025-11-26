@@ -12,6 +12,7 @@ import java.util.List;
 public class Player extends Creature {
 
     private final Inventory inventory;
+    private int damage;
 
     public Player(Position startPosition) {
         super(
@@ -22,9 +23,18 @@ public class Player extends Creature {
                 100 // Standard Brogue starting HP
         );
         this.inventory = new Inventory();
+        this.damage = 10; // Standard Brogue starting damage
     }
 
     public Inventory getInventory() {
         return inventory;
+    }
+
+    public int getDamage() {
+        return damage;
+    }
+
+    public void setDamage(int damage) {
+        this.damage = damage;
     }
 }
