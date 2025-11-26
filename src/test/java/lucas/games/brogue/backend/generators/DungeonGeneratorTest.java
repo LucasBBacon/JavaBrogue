@@ -4,6 +4,8 @@ import lucas.games.brogue.backend.DungeonLevel;
 import lucas.games.brogue.backend.TerrainType;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,12 +14,12 @@ class DungeonGeneratorTest {
     @Test
     void testRoomGeneration() {
         DungeonLevel level = new DungeonLevel(50, 50);
-        DungeonGenerator generator = new DungeonGenerator(level, 12345);
+        DungeonGenerator generator = new DungeonGenerator(level, 12345, 1);
 
         // Pre-check, everything is a wall
         assertEquals(TerrainType.WALL, level.getTile(25, 25).getTerrain());
 
-        generator.generate();
+        generator.generate(new ArrayList<>());
 
         // Post-check, some tiles should now be floors
         int floorCount = 0;
@@ -38,8 +40,8 @@ class DungeonGeneratorTest {
         // This is a harder test. Ideally, we would flood-fill to ensure all rooms are connected
         // For now we just ensure we generated something substantial
         DungeonLevel level = new DungeonLevel(40, 40);
-        DungeonGenerator generator = new DungeonGenerator(level, 999);
-        generator.generate();
+        DungeonGenerator generator = new DungeonGenerator(level, 999, 1);
+        generator.generate(new ArrayList<>());
 
         // pick the center of the map and scan for a floor
         // just ensuring no crashes during generation

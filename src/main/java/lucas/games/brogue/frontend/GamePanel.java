@@ -1,5 +1,6 @@
 package lucas.games.brogue.frontend;
 
+import lucas.games.brogue.backend.BrogueColor;
 import lucas.games.brogue.backend.DungeonLevel;
 import lucas.games.brogue.backend.GameManager;
 import lucas.games.brogue.backend.Tile;
@@ -56,27 +57,22 @@ public class GamePanel extends JPanel {
                     if (tile.hasOccupant()) {
                         symbol = tile.getOccupant().getSymbol();
                         // Mapping BrogueColor to AWT Color
-                        color = color.WHITE;
-                        if (symbol == '@') color = Color.GREEN;
-                        if (symbol == 'K' || symbol == 'r') color = Color.RED;
-                        if (symbol == 'G') color = Color.GREEN.darker();
+                        color = toAwtColor(tile.getOccupant().getColor());
                     } else if (tile.hasItems()) {
                         symbol = tile.getTopItem().getSymbol();
-                        color = Color.YELLOW;
+                        color = toAwtColor(tile.getTopItem().getColor());
                     } else {
                         symbol = tile.getTerrain().getSymbol();
-                        if (symbol == '>') color = Color.MAGENTA;
-                        else color = (symbol == '#') ? Color.DARK_GRAY : Color.LIGHT_GRAY;
+                        color = toAwtColor(tile.getTerrain().getColor());
                     }
                 } else if (tile.isExplored()) {
                     // Memory color (dim)
                     if (tile.hasItems()) {
                         symbol = tile.getTopItem().getSymbol();
-                        color = new Color(100, 100, 50);
+                        color = toAwtColor(tile.getTopItem().getColor().scale(0.5));
                     } else {
                         symbol = tile.getTerrain().getSymbol();
-                        if (symbol == '>') color = new Color(100, 0, 100);
-                        else color = new Color(50, 50, 50);
+                        color = toAwtColor(tile.getTerrain().getColor().scale(0.3));
                     }
                 }
 
@@ -90,6 +86,10 @@ public class GamePanel extends JPanel {
                 }
             }
         }
+    }
+
+    private Color toAwtColor(BrogueColor bc) {
+        return new Color(bc.toRgbInt());
     }
 
     private void renderUI(Graphics2D g) {

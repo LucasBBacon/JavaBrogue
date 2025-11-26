@@ -1,6 +1,8 @@
 package lucas.games.brogue.backend.generators;
 
 import lucas.games.brogue.backend.*;
+import lucas.games.brogue.backend.data.MonsterTemplate;
+import lucas.games.brogue.backend.data.SpawnTable;
 import lucas.games.brogue.backend.entities.Entity;
 import lucas.games.brogue.backend.entities.Monster;
 import lucas.games.brogue.backend.entities.items.Food;
@@ -18,11 +20,42 @@ public class DungeonGenerator {
     private final DungeonLevel level;
     private final BrogueRandom random;
     private final int depth;
+    private final SpawnTable spawnTable;
 
     public DungeonGenerator(DungeonLevel level, int seed, int depth) {
         this.level = level;
         this.random = new BrogueRandom(seed);
         this.depth = depth;
+        this.spawnTable = initializeSpawnTable();
+    }
+
+    // --- Configuration ---
+    private SpawnTable initializeSpawnTable() {
+        SpawnTable table = new SpawnTable();
+
+        // Define templates
+        MonsterTemplate rat    = new MonsterTemplate("Rat", 'r', new BrogueColor(0.5, 0.3, 0.1),
+                6, 2, 6);
+        MonsterTemplate kobold = new MonsterTemplate("Kobold", 'K', new BrogueColor(0.8, 0.0, 0.0),
+                15, 4, 8);
+        MonsterTemplate goblin = new MonsterTemplate("Goblin", 'G', new BrogueColor(0.0, 0.8, 0.0),
+                25, 6, 9);
+        MonsterTemplate ogre   = new MonsterTemplate("Ogre", 'O', new BrogueColor(0.2, 0.6, 0.2),
+                50, 12, 10);
+
+        // Define rules: (Template, minDepth, maxDepth, weight)
+        // Depth 1-3: Mostly rats, some kobolds
+        table.add(rat,    1, 5, 100);
+        table.add(kobold, 1, 8, 20);
+
+        // Depth 4+: goblins appear
+        table.add(goblin, 4, 100, 30);
+        table.add(kobold, 4, 10, 50); // Kobolds become more common
+
+        // Depth 6+: ogres
+        table.add(ogre,   6, 100, 10);
+
+        return table;
     }
 
     /**
@@ -31,8 +64,6 @@ public class DungeonGenerator {
      * @return A list of Entities generated during map creation.
      */
     public Position generate(List<Entity> generatedEntities) {
-        // 1. Fill with walls (implied by new level, but will be safer this way)
-        // fillWalls();
         level.reset();
 
         List<Rect> rooms = new ArrayList<>();
@@ -128,7 +159,10 @@ public class DungeonGenerator {
         if (monsterChance > 90) monsterChance = 90;
 
         if (random.randomPercent(monsterChance)) {
-            spawnMonster(pos, list);
+            MonsterTemplate choice = spawnTable.roll(depth, random); // use the SpawnTable to pick a monster
+            if (choice != null) {
+                list.add(choice.spawn(pos));
+            }
             return; // Don't spawn loot on top of monster
         }
 
@@ -140,63 +174,6 @@ public class DungeonGenerator {
             } else {
                 list.add(new Gold(pos));
             }
-        }
-    }
-
-    private void spawnMonster(Position pos, List<Entity> list) {
-        // Simple difficulty table
-        if (depth == 1) {
-            // Level 1: mostly rats, rare kobolds
-            if (random.randomPercent(80))
-                list.add(
-                    new Monster(
-                        pos,
-                        'r',
-                        new BrogueColor(0.5, 0.3, 0.1),
-                        "Rat",
-                        6,
-                        2,
-                        6
-                    )
-                );
-            else
-                list.add(
-                        new Monster(
-                                pos,
-                                'K',
-                                new BrogueColor(0.8, 0.0, 0.0),
-                                "Kobold",
-                                15,
-                                4,
-                                8
-                        )
-                );
-        } else {
-            // Deeper: more kobolds, maybe goblins
-            if (random.randomPercent(50))
-                list.add(
-                    new Monster(
-                        pos,
-                        'K',
-                        new BrogueColor(0.8, 0.0, 0.0),
-                        "Kobold",
-                        15,
-                        4,
-                        8
-                    )
-                );
-            else
-                list.add(
-                    new Monster(
-                        pos,
-                        'G',
-                        new BrogueColor(0.0, 0.8, 0.0),
-                        "Goblin",
-                        25,
-                        6,
-                        9
-                    )
-                );
         }
     }
 }

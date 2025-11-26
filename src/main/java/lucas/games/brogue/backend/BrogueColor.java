@@ -18,6 +18,7 @@ public final class BrogueColor {
     public static final BrogueColor RED   = new BrogueColor(1.0, 0.0, 0.0);
     public static final BrogueColor BLUE  = new BrogueColor(0.0, 0.0, 1.0);
     public static final BrogueColor TEAL  = new BrogueColor(0.0, 1.0, 1.0);
+    public static final BrogueColor MAGENTA     = new BrogueColor(1.0, 0.0, 1.0);
     public static final BrogueColor TORCH_LIGHT = new BrogueColor(1.0, 0.9, 0.7);
 
     private final double r;
