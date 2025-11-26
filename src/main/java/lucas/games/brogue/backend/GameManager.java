@@ -33,7 +33,18 @@ public class GameManager {
      */
     public void generateDungeon(int seed) {
         DungeonGenerator generator = new DungeonGenerator(dungeonLevel, seed);
-        generator.generate();
+
+        // generate geometry and get teh list of generated items
+        List<Entity> generatedLoot = generator.generate();
+
+        // Clear old entities (except player if persisting them, but here we wipe)
+        entities.clear();
+        player = null; // Player needs to be re-spawned manually usually, or preserved
+
+        // Spawn generated loot
+        for (Entity loot : generatedLoot) {
+            spawnEntity(loot, loot.getPosition());
+        }
     }
 
     /**
@@ -131,16 +142,6 @@ public class GameManager {
     }
 
     /**
-     * Recalculates the player's field of view.
-     */
-    private void updatePlayerFOV() {
-        if (player != null) {
-            // Standard visual radius usually 10 tiles
-            fovSystem.calculateFOV(dungeonLevel, player.getPosition(), 10);
-        }
-    }
-
-    /**
      * The Player attempts to pick up the top item on their current tile.
      * @return true if an item was picked up, false if no item or inventory full.
      */
@@ -165,6 +166,38 @@ public class GameManager {
         }
 
         return false; // Inventory full or other failure
+    }
+
+    /**
+     * Uses an item from the player's inventory.
+     * @param index The slot index (0-25).
+     * @return The result message of the action.
+     */
+    public String useItem(int index) {
+        if (player == null) return "No player found.";
+
+        Inventory inv = player.getInventory();
+        Item item = inv.get(index);
+
+        if (item == null) return "No item in that slot.";
+
+        // Execute item logic
+        String message = item.use(player);
+
+        // Handle consumption
+        if (item.isConsumable()) inv.remove(item);
+
+        return message;
+    }
+
+    /**
+     * Recalculates the player's field of view.
+     */
+    private void updatePlayerFOV() {
+        if (player != null) {
+            // Standard visual radius usually 10 tiles
+            fovSystem.calculateFOV(dungeonLevel, player.getPosition(), 10);
+        }
     }
 
     public DungeonLevel getDungeonLevel() { return dungeonLevel; }

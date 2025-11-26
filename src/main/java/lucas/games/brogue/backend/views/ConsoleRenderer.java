@@ -57,6 +57,8 @@ public class ConsoleRenderer {
                 // Show all terrain and occupants regardless of visibility
                 if (tile.hasOccupant()) {
                     sb.append(tile.getOccupant().getSymbol());
+                } if (tile.hasItems()) {
+                    sb.append(tile.getTopItem().getSymbol());
                 } else {
                     sb.append(tile.getTerrain().getSymbol());
                 }

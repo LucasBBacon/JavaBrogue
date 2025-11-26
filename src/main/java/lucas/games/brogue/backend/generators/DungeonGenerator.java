@@ -1,6 +1,9 @@
 package lucas.games.brogue.backend.generators;
 
 import lucas.games.brogue.backend.*;
+import lucas.games.brogue.backend.entities.Entity;
+import lucas.games.brogue.backend.entities.items.Food;
+import lucas.games.brogue.backend.entities.items.Gold;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,14 +23,18 @@ public class DungeonGenerator {
     }
 
     /**
-     * Generates a basic dungeon layout.
+     * Generates a basic dungeon layout and returns a list of initial entities (loot).
      * Clears the level and places connected rooms.
+     * @return A list of Entities generated during map creation.
      */
-    public void generate() {
+    public List<Entity> generate() {
         // 1. Fill with walls (implied by new level, but will be safer this way)
         // fillWalls();
+        // TODO: clear grid logic
 
         List<Rect> rooms = new ArrayList<>();
+        List<Entity> generatedLoot = new ArrayList<>();
+
         int maxRooms = 30;
         int minSize = 6;
         int maxSize = 10;
@@ -64,8 +71,13 @@ public class DungeonGenerator {
                 }
 
                 rooms.add(newRoom);
+
+                // Attempt to generate loot for this room
+                generateRoomLoot(newRoom, generatedLoot);
             }
         }
+
+        return generatedLoot;
     }
 
     private void createRoom(Rect room) {
@@ -94,6 +106,20 @@ public class DungeonGenerator {
         while (y != end.y()) {
             level.setTile(x, y, new Tile(TerrainType.FLOOR));
             y += (end.y() > y) ? 1 : -1;
+        }
+    }
+
+    private void generateRoomLoot(Rect room, List<Entity> lootList) {
+        // 50% chance for a room to have loot
+        if (random.randomPercent(50)) {
+            Position pos = room.getRandomPosition(random);
+
+            // 30% chance for Food, otherwise Gold
+            if (random.randomPercent(30)) {
+                lootList.add(new Food(pos));
+            } else {
+                lootList.add(new Gold(pos));
+            }
         }
     }
 }
