@@ -179,6 +179,15 @@ public class GameManager {
         if (target.isDead()) {
             log ("The " + target.getName() + " dies.");
 
+            // --- XP Logic ---
+            int xp = target.getXpValue();
+            log("You gain " + xp + " experience.");
+
+            if (attacker.gainExperience(xp)) {
+                log(">>> LEVEL UP! You are now level " + attacker.getLevel() + "!");
+                log("Your Max HP and Damage have increased.");
+            }
+
             // Remove from grid
             Tile tile = dungeonLevel.getTile(target.getPosition());
             if (tile.getOccupant() == target) {

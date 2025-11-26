@@ -18,6 +18,10 @@ public class Monster extends Creature {
         super(position, symbol, color, name, maxHp);
         this.viewDistance = viewDistance;
         this.damage = damage;
+
+        // Calculate XP value based on difficulty
+        // Simple formula: HP + damage * 2
+        this.setXpValue(maxHp + (damage * 2));
     }
 
     public int getViewDistance() {

@@ -31,6 +31,14 @@ public class DungeonLevel {
         }
     }
 
+    /**
+     * Wipes the level clean
+     * Replaces every tile with a fresh wall tile, removing all items, occupants, etc.
+     */
+    public void reset() {
+        initializeGrid();
+    }
+
     public int getWidth() {
         return width;
     }

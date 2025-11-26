@@ -31,7 +31,7 @@ public class DungeonGenerator {
     public List<Entity> generate() {
         // 1. Fill with walls (implied by new level, but will be safer this way)
         // fillWalls();
-        // TODO: clear grid logic
+        level.reset();
 
         List<Rect> rooms = new ArrayList<>();
         List<Entity> generatedLoot = new ArrayList<>();

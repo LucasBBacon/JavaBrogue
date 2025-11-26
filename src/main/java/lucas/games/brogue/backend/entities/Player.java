@@ -26,6 +26,13 @@ public class Player extends Creature {
         this.damage = 10; // Standard Brogue starting damage
     }
 
+    @Override
+    protected void levelUp() {
+        super.levelUp();
+        // Player gains damage on level up
+        this.damage += 2;
+    }
+
     public Inventory getInventory() {
         return inventory;
     }

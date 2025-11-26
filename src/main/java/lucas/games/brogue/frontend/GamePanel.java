@@ -96,10 +96,12 @@ public class GamePanel extends JPanel {
 
         // Player stats
         if (gameManager.getPlayer() != null) {
-            String stats = String.format("HP: %d/%d  Damage: %d",
+            String stats = String.format("HP: %d/%d   Damage: %d   Lvl: %d   XP: %d",
                     gameManager.getPlayer().getCurrentHp(),
                     gameManager.getPlayer().getMaxHp(),
-                    gameManager.getPlayer().getDamage()
+                    gameManager.getPlayer().getDamage(),
+                    gameManager.getPlayer().getLevel(),
+                    gameManager.getPlayer().getExperience()
             );
             g.drawString(stats, startX, bottomY);
         }
