@@ -3,16 +3,22 @@ package lucas.games.brogue.backend.views;
 import lucas.games.brogue.backend.DungeonLevel;
 import lucas.games.brogue.backend.Tile;
 
+import java.util.List;
+
 /**
  * A simple text-based renderer to visualise the dungeon state.
  * Useful for debugging logic before a real GUI is attached.
  */
 public class ConsoleRenderer {
 
+    public String render(DungeonLevel level) {
+        return render(level, null);
+    }
+
     /**
      * Converts the current dungeon state into a printable string.
      */
-    public String render(DungeonLevel level) {
+    public String render(DungeonLevel level, MessageLog log) {
         StringBuilder sb = new StringBuilder();
 
         // print top border
@@ -33,7 +39,16 @@ public class ConsoleRenderer {
         // Print bottom border
         sb.append("+");
         sb.append("-".repeat(Math.max(0, level.getWidth())));
-        sb.append("+");
+        sb.append("+\n");
+
+        // Message log
+        if (log != null) {
+            sb.append("Messages:\n");
+            List<String> recent = log.getRecentMessages(3);
+            for (String msg : recent) {
+                sb.append("> ").append(msg).append("\n");
+            }
+        }
 
         return sb.toString();
     }

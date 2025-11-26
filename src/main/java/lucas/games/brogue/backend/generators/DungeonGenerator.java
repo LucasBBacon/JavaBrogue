@@ -2,6 +2,7 @@ package lucas.games.brogue.backend.generators;
 
 import lucas.games.brogue.backend.*;
 import lucas.games.brogue.backend.entities.Entity;
+import lucas.games.brogue.backend.entities.Monster;
 import lucas.games.brogue.backend.entities.items.Food;
 import lucas.games.brogue.backend.entities.items.Gold;
 
@@ -73,7 +74,7 @@ public class DungeonGenerator {
                 rooms.add(newRoom);
 
                 // Attempt to generate loot for this room
-                generateRoomLoot(newRoom, generatedLoot);
+                generateRoomContents(newRoom, generatedLoot);
             }
         }
 
@@ -109,16 +110,42 @@ public class DungeonGenerator {
         }
     }
 
-    private void generateRoomLoot(Rect room, List<Entity> lootList) {
-        // 50% chance for a room to have loot
-        if (random.randomPercent(50)) {
-            Position pos = room.getRandomPosition(random);
+    private void generateRoomContents(Rect room, List<Entity> list) {
+        Position pos = room.getRandomPosition(random);
 
+        // 40% chance to spawn a monster
+        if (random.randomPercent(40)) {
+            if (random.randomPercent(50)) {
+                // Kobold
+                list.add(new Monster(pos,
+                        'K',
+                        new BrogueColor(0.8, 0.0, 0.0),
+                        "Kobold",
+                        15,
+                        4,
+                        8)
+                );
+            } else {
+                // Rat
+                list.add(new Monster(pos,
+                        'r',
+                        new BrogueColor(0.5, 0.3, 0.1),
+                        "Rat",
+                        6,
+                        2,
+                        6)
+                );
+            }
+            return; // Don't spawn loot on top of monster
+        }
+
+        // 40% chance for a room to have loot
+        if (random.randomPercent(40)) {
             // 30% chance for Food, otherwise Gold
             if (random.randomPercent(30)) {
-                lootList.add(new Food(pos));
+                list.add(new Food(pos));
             } else {
-                lootList.add(new Gold(pos));
+                list.add(new Gold(pos));
             }
         }
     }

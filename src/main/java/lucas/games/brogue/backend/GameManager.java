@@ -5,7 +5,9 @@ import lucas.games.brogue.backend.entities.Inventory;
 import lucas.games.brogue.backend.entities.Player;
 import lucas.games.brogue.backend.entities.items.Item;
 import lucas.games.brogue.backend.generators.DungeonGenerator;
+import lucas.games.brogue.backend.systems.AISystem;
 import lucas.games.brogue.backend.systems.FOVSystem;
+import lucas.games.brogue.backend.views.MessageLog;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,12 +21,24 @@ public class GameManager {
     private final DungeonLevel dungeonLevel;
     private final List<Entity> entities;
     private final FOVSystem fovSystem;
+    private final AISystem aiSystem;
+    private final MessageLog messageLog;
     private Player player;
 
     public GameManager(int width, int height) {
         this.dungeonLevel = new DungeonLevel(width, height);
         this.entities = new ArrayList<>();
         this.fovSystem = new FOVSystem();
+        this.aiSystem = new AISystem();
+        this.messageLog = new MessageLog();
+    }
+
+    public void log(String message) {
+        messageLog.add(message);
+    }
+
+    public MessageLog getMessageLog() {
+        return messageLog;
     }
 
     /**
@@ -45,6 +59,8 @@ public class GameManager {
         for (Entity loot : generatedLoot) {
             spawnEntity(loot, loot.getPosition());
         }
+
+        log("Welcome to the Dungeons of Brogue");
     }
 
     /**
@@ -80,7 +96,7 @@ public class GameManager {
         Tile tile = dungeonLevel.getTile(pos);
 
         // Basic collision check, don't spawn on walls or occupied tiles
-        if (!tile.getTerrain().isPassable() || tile.hasOccupant()) return false;
+        if (!tile.getTerrain().isPassable()) return false;
 
         // Handle logic based on type
         if (entity instanceof Item) {
@@ -114,6 +130,7 @@ public class GameManager {
 
         // terrain check
         if (!targetTile.getTerrain().isPassable()) {
+            if (entity == player) log("Blocked by wall.");
             return false; // hit a wall
         }
 
@@ -121,7 +138,10 @@ public class GameManager {
         // Only check collision if we are moving a "Blocker" (like the Player)
         // TODO: Implement throwing items, items might fly over entities
         if (!(entity instanceof Item)) {
-            if (targetTile.hasOccupant()) return false; // bumped into someone
+            if (targetTile.hasOccupant()) {
+                if (entity == player) log("Blocked by " + targetTile.getOccupant());
+                return false; // bumped into someone
+            }
 
             // Move the occupant reference
             currentTile.setOccupant(null);
@@ -136,6 +156,7 @@ public class GameManager {
 
         if (entity == player) {
             updatePlayerFOV();
+            processTurn(); // If player moved it counts as a turn
         }
 
         return true;
@@ -151,7 +172,10 @@ public class GameManager {
         Position pos = player.getPosition();
         Tile tile = dungeonLevel.getTile(pos);
 
-        if (!tile.hasItems()) return false; // Nothing to pick up
+        if (!tile.hasItems()) {
+            log("There is nothing to pick up.");
+            return false; // Nothing to pick up
+        }
 
         Item item = tile.getTopItem();
         Inventory inv = player.getInventory();
@@ -162,7 +186,11 @@ public class GameManager {
             // Technically, it should be removed from the entities list too
             // to stop the engine from tracking it as a map object
             entities.remove(item);
+            log("You pick up the " + item.getName() + ".");
+            processTurn();
             return true;
+        } else {
+            log("Your pack is full.");
         }
 
         return false; // Inventory full or other failure
@@ -188,6 +216,13 @@ public class GameManager {
         if (item.isConsumable()) inv.remove(item);
 
         return message;
+    }
+
+    /**
+     * Executes the enemy turn.
+     */
+    private void processTurn() {
+        aiSystem.processMonsters(this);
     }
 
     /**
