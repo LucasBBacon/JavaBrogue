@@ -1,6 +1,7 @@
 package lucas.games.brogue.backend;
 
 import lucas.games.brogue.backend.entities.Entity;
+import lucas.games.brogue.backend.entities.Inventory;
 import lucas.games.brogue.backend.entities.Player;
 import lucas.games.brogue.backend.entities.items.Item;
 import lucas.games.brogue.backend.generators.DungeonGenerator;
@@ -137,6 +138,33 @@ public class GameManager {
             // Standard visual radius usually 10 tiles
             fovSystem.calculateFOV(dungeonLevel, player.getPosition(), 10);
         }
+    }
+
+    /**
+     * The Player attempts to pick up the top item on their current tile.
+     * @return true if an item was picked up, false if no item or inventory full.
+     */
+    public boolean pickUpItem() {
+        if (player == null) return false;
+
+        Position pos = player.getPosition();
+        Tile tile = dungeonLevel.getTile(pos);
+
+        if (!tile.hasItems()) return false; // Nothing to pick up
+
+        Item item = tile.getTopItem();
+        Inventory inv = player.getInventory();
+
+        if (inv.add(item)) {
+            // Success - remove from world
+            tile.removeItem(item);
+            // Technically, it should be removed from the entities list too
+            // to stop the engine from tracking it as a map object
+            entities.remove(item);
+            return true;
+        }
+
+        return false; // Inventory full or other failure
     }
 
     public DungeonLevel getDungeonLevel() { return dungeonLevel; }
