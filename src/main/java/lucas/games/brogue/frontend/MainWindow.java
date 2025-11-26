@@ -14,17 +14,8 @@ public class MainWindow extends JFrame {
         setResizable(false);
 
         // 1. Init backend
-        GameManager gameManager = new GameManager(50, 50);
-        gameManager.generateDungeon((int) (Math.random() * 100000));
-
-        // Find a valid start spot
-        // TODO: smarter spawn logic
-        Position startPos = new Position(5, 5);
-        // Force floor for safety
-        if (gameManager.getDungeonLevel().getTile(startPos).getTerrain() == TerrainType.WALL) {
-            gameManager.getDungeonLevel().getTile(startPos).setTerrain(TerrainType.FLOOR);
-        }
-        gameManager.spawnPlayer(startPos);
+        GameManager gameManager = new GameManager(50, 30);
+        gameManager.startNewGame((int) (Math.random() * 10000));
 
         // 2. Init frontend
         GamePanel panel = new GamePanel(gameManager);

@@ -45,6 +45,20 @@ public class InputHandler implements KeyListener {
                     gameManager.pickUpItem();
                     actionTaken = true;
                     break;
+                // Handle '>' via Shift+Period usually, but Swing maps keycodes oddly
+                case KeyEvent.VK_PERIOD:
+                    if (e.isShiftDown()) {
+                        gameManager.descend();
+                        gamePanel.repaint(); // repaint immediately as map changed
+                        return;
+                    }
+                    break;
+
+                // Handle stairs explicit enter
+                case KeyEvent.VK_ENTER:
+                    gameManager.descend();
+                    gamePanel.repaint();
+                    return;
 
                 // Debug - regenerate dungeon
                 case KeyEvent.VK_R:

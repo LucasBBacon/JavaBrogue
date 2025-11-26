@@ -1,7 +1,6 @@
 package lucas.games.brogue.backend.generators;
 
 import lucas.games.brogue.backend.GameManager;
-import lucas.games.brogue.backend.Position;
 import lucas.games.brogue.backend.entities.Entity;
 import lucas.games.brogue.backend.entities.items.Food;
 import lucas.games.brogue.backend.entities.items.Gold;

@@ -12,7 +12,8 @@ public enum TerrainType {
     DOOR_CLOSED('+',    false, true),
     DOOR_OPEN(  '/',    true,  false),
     CHASM(      ':',    true,  false),
-    WATER(      '~',    true,  false);
+    WATER(      '~',    true,  false),
+    STAIRS_DOWN('>',    true,  false),;
 
     private final char symbol;
     private final boolean isPassable;

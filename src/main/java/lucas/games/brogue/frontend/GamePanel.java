@@ -59,12 +59,14 @@ public class GamePanel extends JPanel {
                         color = color.WHITE;
                         if (symbol == '@') color = Color.GREEN;
                         if (symbol == 'K' || symbol == 'r') color = Color.RED;
+                        if (symbol == 'G') color = Color.GREEN.darker();
                     } else if (tile.hasItems()) {
                         symbol = tile.getTopItem().getSymbol();
                         color = Color.YELLOW;
                     } else {
                         symbol = tile.getTerrain().getSymbol();
-                        color = (symbol == '#') ? Color.DARK_GRAY : Color.LIGHT_GRAY;
+                        if (symbol == '>') color = Color.MAGENTA;
+                        else color = (symbol == '#') ? Color.DARK_GRAY : Color.LIGHT_GRAY;
                     }
                 } else if (tile.isExplored()) {
                     // Memory color (dim)
@@ -73,7 +75,8 @@ public class GamePanel extends JPanel {
                         color = new Color(100, 100, 50);
                     } else {
                         symbol = tile.getTerrain().getSymbol();
-                        color = new Color(50, 50, 50);
+                        if (symbol == '>') color = new Color(100, 0, 100);
+                        else color = new Color(50, 50, 50);
                     }
                 }
 
@@ -96,7 +99,8 @@ public class GamePanel extends JPanel {
 
         // Player stats
         if (gameManager.getPlayer() != null) {
-            String stats = String.format("HP: %d/%d   Damage: %d   Lvl: %d   XP: %d",
+            String stats = String.format("Depth: %d   HP: %d/%d   Damage: %d   Lvl: %d   XP: %d",
+                    gameManager.getCurrentDepth(),
                     gameManager.getPlayer().getCurrentHp(),
                     gameManager.getPlayer().getMaxHp(),
                     gameManager.getPlayer().getDamage(),

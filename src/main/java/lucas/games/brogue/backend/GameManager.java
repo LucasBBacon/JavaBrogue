@@ -26,6 +26,8 @@ public class GameManager {
     private final MessageLog messageLog;
     private Player player;
 
+    private int currentDepth = 1;
+
     public GameManager(int width, int height) {
         this.dungeonLevel = new DungeonLevel(width, height);
         this.entities = new ArrayList<>();
@@ -34,34 +36,72 @@ public class GameManager {
         this.messageLog = new MessageLog();
     }
 
-    public void log(String message) {
-        messageLog.add(message);
-    }
+    public void log(String message) { messageLog.add(message); }
+    public MessageLog getMessageLog() { return messageLog; }
+    public int getCurrentDepth() { return currentDepth; }
 
-    public MessageLog getMessageLog() {
-        return messageLog;
+    public void startNewGame(int seed) {
+        this.currentDepth = 1;
+        generateLevel(seed);
+
+        // For a new game, we create a fresh player
+        // The generator returns the start position
+        // But for simplicity in this refactor, we rely on the generato logic to place the player
+        // returning the start position
+        // Let's assume generateLevel sets up the map, and we spawn player after
     }
 
     /**
      * Generates a new dungeon using the provided seed.
      * This replaces the current level geometry with a procedurally generated one.
      */
-    public void generateDungeon(int seed) {
-        DungeonGenerator generator = new DungeonGenerator(dungeonLevel, seed);
-
-        // generate geometry and get teh list of generated items
-        List<Entity> generatedLoot = generator.generate();
-
-        // Clear old entities (except player if persisting them, but here we wipe)
+    private void generateLevel(int seed) {
+        // Clear entities list but KEEP the player if they exist
         entities.clear();
-        player = null; // Player needs to be re-spawned manually usually, or preserved
-
-        // Spawn generated loot
-        for (Entity loot : generatedLoot) {
-            spawnEntity(loot, loot.getPosition());
+        if (player != null) {
+            entities.add(player);
         }
 
-        log("Welcome to the Dungeons of Brogue");
+        DungeonGenerator generator = new DungeonGenerator(dungeonLevel, seed, currentDepth);
+
+        // Pass entities list to populate
+        List<Entity> newEntities = new ArrayList<>();
+        Position startPos = generator.generate(newEntities);
+
+        // Spawn generated loot
+        for (Entity e : newEntities) {
+            spawnEntity(e, e.getPosition());
+        }
+
+        if (player == null) {
+            spawnPlayer(startPos);
+        } else {
+            // Move existing player to new start
+            Tile t = dungeonLevel.getTile(startPos);
+            t.setOccupant(player);
+            player.setPosition(startPos);
+        }
+
+        log("--- Depth " + currentDepth + " ---");
+        updatePlayerFOV();
+    }
+
+    public void generateDungeon(int seed) {
+        generateLevel(seed);
+    }
+
+    public boolean descend() {
+        Position pos = player.getPosition();
+
+        if (dungeonLevel.getTile(pos).getTerrain() == TerrainType.STAIRS_DOWN) {
+            currentDepth++;
+            log("You descend deeper into the dungeons...");
+            generateLevel((int)(Math.random() * 10000));
+            return true;
+        } else {
+            log("There are no stairs here.");
+            return false;
+        }
     }
 
     /**

@@ -17,10 +17,12 @@ public class DungeonGenerator {
 
     private final DungeonLevel level;
     private final BrogueRandom random;
+    private final int depth;
 
-    public DungeonGenerator(DungeonLevel level, int seed) {
+    public DungeonGenerator(DungeonLevel level, int seed, int depth) {
         this.level = level;
         this.random = new BrogueRandom(seed);
+        this.depth = depth;
     }
 
     /**
@@ -28,14 +30,12 @@ public class DungeonGenerator {
      * Clears the level and places connected rooms.
      * @return A list of Entities generated during map creation.
      */
-    public List<Entity> generate() {
+    public Position generate(List<Entity> generatedEntities) {
         // 1. Fill with walls (implied by new level, but will be safer this way)
         // fillWalls();
         level.reset();
 
         List<Rect> rooms = new ArrayList<>();
-        List<Entity> generatedLoot = new ArrayList<>();
-
         int maxRooms = 30;
         int minSize = 6;
         int maxSize = 10;
@@ -44,7 +44,6 @@ public class DungeonGenerator {
             // Generate random dimensions
             int w = random.randomRange(minSize, maxSize);
             int h = random.randomRange(minSize, maxSize);
-
             // Generate random position (ensure it fits in level with 1 cell padding)
             int x = random.randomRange(1, level.getWidth() - w - 1);
             int y = random.randomRange(1, level.getHeight() - h - 1);
@@ -72,13 +71,24 @@ public class DungeonGenerator {
                 }
 
                 rooms.add(newRoom);
-
                 // Attempt to generate loot for this room
-                generateRoomContents(newRoom, generatedLoot);
+                generateRoomContents(newRoom, generatedEntities);
             }
         }
 
-        return generatedLoot;
+        // --- Stair placement ---
+        // Place stairs in the LAST room generated
+        if (!rooms.isEmpty()) {
+            Rect lastRoom = rooms.getLast();
+            Position stairPos = lastRoom.getCenter();
+            level.setTile(stairPos.x(), stairPos.y(), new Tile(TerrainType.STAIRS_DOWN));
+        }
+
+        // Return the center of the FIRST room for the player start
+        if (!rooms.isEmpty()) {
+            return rooms.getFirst().getCenter();
+        }
+        return new Position(1, 1); // Fallback start position
     }
 
     private void createRoom(Rect room) {
@@ -113,40 +123,80 @@ public class DungeonGenerator {
     private void generateRoomContents(Rect room, List<Entity> list) {
         Position pos = room.getRandomPosition(random);
 
-        // 40% chance to spawn a monster
+        // Difficulty scaling - base 40% chance. Increases by 5% per depth level
+        int monsterChance = 40 + (depth * 5);
+        if (monsterChance > 90) monsterChance = 90;
+
+        if (random.randomPercent(monsterChance)) {
+            spawnMonster(pos, list);
+            return; // Don't spawn loot on top of monster
+        }
+
+        // Loot scaling - Food becomes rarer deeper down
         if (random.randomPercent(40)) {
-            if (random.randomPercent(50)) {
-                // Kobold
-                list.add(new Monster(pos,
-                        'K',
-                        new BrogueColor(0.8, 0.0, 0.0),
-                        "Kobold",
-                        15,
-                        4,
-                        8)
-                );
+            // 30% chance for Food, otherwise Gold
+            if (random.randomPercent(30 - depth)) {
+                list.add(new Food(pos));
             } else {
-                // Rat
-                list.add(new Monster(pos,
+                list.add(new Gold(pos));
+            }
+        }
+    }
+
+    private void spawnMonster(Position pos, List<Entity> list) {
+        // Simple difficulty table
+        if (depth == 1) {
+            // Level 1: mostly rats, rare kobolds
+            if (random.randomPercent(80))
+                list.add(
+                    new Monster(
+                        pos,
                         'r',
                         new BrogueColor(0.5, 0.3, 0.1),
                         "Rat",
                         6,
                         2,
-                        6)
+                        6
+                    )
                 );
-            }
-            return; // Don't spawn loot on top of monster
-        }
-
-        // 40% chance for a room to have loot
-        if (random.randomPercent(40)) {
-            // 30% chance for Food, otherwise Gold
-            if (random.randomPercent(30)) {
-                list.add(new Food(pos));
-            } else {
-                list.add(new Gold(pos));
-            }
+            else
+                list.add(
+                        new Monster(
+                                pos,
+                                'K',
+                                new BrogueColor(0.8, 0.0, 0.0),
+                                "Kobold",
+                                15,
+                                4,
+                                8
+                        )
+                );
+        } else {
+            // Deeper: more kobolds, maybe goblins
+            if (random.randomPercent(50))
+                list.add(
+                    new Monster(
+                        pos,
+                        'K',
+                        new BrogueColor(0.8, 0.0, 0.0),
+                        "Kobold",
+                        15,
+                        4,
+                        8
+                    )
+                );
+            else
+                list.add(
+                    new Monster(
+                        pos,
+                        'G',
+                        new BrogueColor(0.0, 0.8, 0.0),
+                        "Goblin",
+                        25,
+                        6,
+                        9
+                    )
+                );
         }
     }
 }
