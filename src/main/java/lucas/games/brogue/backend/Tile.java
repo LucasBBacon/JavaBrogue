@@ -1,6 +1,10 @@
 package lucas.games.brogue.backend;
 
 import lucas.games.brogue.backend.entities.Entity;
+import lucas.games.brogue.backend.entities.items.Item;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents a single tile square in the dungeon grid.
@@ -13,11 +17,15 @@ public class Tile {
     // Light memory: the color of light stored on this tile
     private BrogueColor lightColor;
 
+    // The entity blocking this tile (if any)
+    private Entity occupant;
+
+    // The items lying on the floor
+    private final List<Item> items;
+
     // Visibility
     private boolean isVisible;  // Is the player seeing it right now?
     private boolean isExplored; // Has the player seen it before? (Fog of war)
-
-    private Entity occupant;
 
     public Tile(TerrainType terrain) {
         this.terrain = terrain;
@@ -25,20 +33,39 @@ public class Tile {
         this.isVisible = false;
         this.isExplored = false;
         this.occupant = null;
+        this.items = new ArrayList<>();
+    }
+
+    // --- Item management ---
+
+    public void addItem(Item item) {
+        items.add(item);
+    }
+
+    public void removeItem(Item item) {
+        items.remove(item);
+    }
+
+    public List<Item> getItems() {
+        return items;
+    }
+
+    public boolean hasItems() {
+        return !items.isEmpty();
+    }
+
+    public Item getTopItem() {
+        if (items.isEmpty()) return null;
+        return items.getLast();
     }
 
     public TerrainType getTerrain() { return terrain; }
-    public BrogueColor getLightColor() { return lightColor; }
-    public boolean isVisible() { return isVisible; }
-    public boolean isExplored() { return isExplored; }
-    public Entity getOccupant() { return occupant; }
-
-    public boolean hasOccupant() {
-        return this.occupant != null;
-    }
-
     public void setTerrain(TerrainType terrain) { this.terrain = terrain; }
+
+    public BrogueColor getLightColor() { return lightColor; }
     public void setLightColor(BrogueColor lightColor) { this.lightColor = lightColor; }
+
+    public boolean isVisible() { return isVisible; }
     public void setVisible(boolean visible) {
         isVisible = visible;
         if (visible) {
@@ -46,7 +73,13 @@ public class Tile {
         }
     }
 
+    public boolean isExplored() { return isExplored; }
+
+    public Entity getOccupant() { return occupant; }
     public void setOccupant(Entity occupant) { this.occupant = occupant; }
+    public boolean hasOccupant() {
+        return this.occupant != null;
+    }
 
     /**
      * Reset the tile's lighting and visibility for a new turn.

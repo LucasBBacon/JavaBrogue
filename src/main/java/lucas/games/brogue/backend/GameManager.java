@@ -2,6 +2,7 @@ package lucas.games.brogue.backend;
 
 import lucas.games.brogue.backend.entities.Entity;
 import lucas.games.brogue.backend.entities.Player;
+import lucas.games.brogue.backend.entities.items.Item;
 import lucas.games.brogue.backend.generators.DungeonGenerator;
 import lucas.games.brogue.backend.systems.FOVSystem;
 
@@ -62,22 +63,25 @@ public class GameManager {
      * @return true if successful, false blocked.
      */
     public boolean spawnEntity(Entity entity, Position pos) {
-        if (!dungeonLevel.isValidCoordinate(pos)) {
-            return false;
-        }
+        if (!dungeonLevel.isValidCoordinate(pos)) return false;
 
         Tile tile = dungeonLevel.getTile(pos);
 
         // Basic collision check, don't spawn on walls or occupied tiles
-        if (!tile.getTerrain().isPassable() || tile.hasOccupant()) {
-            return false;
+        if (!tile.getTerrain().isPassable() || tile.hasOccupant()) return false;
+
+        // Handle logic based on type
+        if (entity instanceof Item) {
+            tile.addItem((Item) entity);
+        } else {
+            // Creature/Blockers cannot spawn on top of each other
+            if (tile.hasOccupant()) return false;
+            // update grid state
+            tile.setOccupant(entity);
         }
 
         // update entity internal state
         entity.setPosition(pos);
-
-        // update grid state
-        tile.setOccupant(entity);
         entities.add(entity);
 
         return true;
@@ -102,16 +106,18 @@ public class GameManager {
         }
 
         // occupant check (attack logic could go here)
-        if (targetTile.hasOccupant()) {
-            return false; // bumped into someone
+        // Only check collision if we are moving a "Blocker" (like the Player)
+        // TODO: Implement throwing items, items might fly over entities
+        if (!(entity instanceof Item)) {
+            if (targetTile.hasOccupant()) return false; // bumped into someone
+
+            // Move the occupant reference
+            currentTile.setOccupant(null);
+            targetTile.setOccupant(entity);
+        } else {
+            // Moving an item (e.g. throwing/dropping)
+            // TODO: Implement item stacking logic if needed
         }
-
-        // execute move
-        // remove from old tile
-        currentTile.setOccupant(null);
-
-        // place new tile
-        targetTile.setOccupant(entity);
 
         // update entity internal position
         entity.setPosition(targetPos);
@@ -133,15 +139,9 @@ public class GameManager {
         }
     }
 
-    public DungeonLevel getDungeonLevel() {
-        return dungeonLevel;
-    }
+    public DungeonLevel getDungeonLevel() { return dungeonLevel; }
 
-    public Player getPlayer() {
-        return player;
-    }
+    public Player getPlayer() { return player; }
 
-    public List<Entity> getEntities() {
-        return entities;
-    }
+    public List<Entity> getEntities() { return entities; }
 }
