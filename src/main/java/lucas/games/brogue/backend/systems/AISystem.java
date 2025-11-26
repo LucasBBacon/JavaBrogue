@@ -3,6 +3,7 @@ package lucas.games.brogue.backend.systems;
 import lucas.games.brogue.backend.DungeonLevel;
 import lucas.games.brogue.backend.GameManager;
 import lucas.games.brogue.backend.Position;
+import lucas.games.brogue.backend.Tile;
 import lucas.games.brogue.backend.entities.Entity;
 import lucas.games.brogue.backend.entities.Monster;
 import lucas.games.brogue.backend.entities.Player;
@@ -33,12 +34,52 @@ public class AISystem {
         double distance = monsterPos.distance(playerPos);
         if (distance > monster.getViewDistance()) return; // too far away, do nothing
 
-        // 2. Check line of sight (Simplified - if close enough, we assume smell/sight)
-        // TODO: raycasting or Bresenham's line algorithm for proper LOS
+        // 2. Check line of sight
+        if (!hasLineOfSight(monsterPos, playerPos, gameManager.getDungeonLevel())) return;
 
         // 3. Combat or move
         if (distance < 1.5) attack(monster, player, gameManager); // adjacent, diagonals are ~1.4
         else moveTowards(monster, playerPos, gameManager); // move closer
+    }
+
+    /**
+     * Bresenham's Line Algorithm to check for obstacles between two points
+     * @return true if there is a clear line of sight, false if blocked.
+     */
+    private boolean hasLineOfSight(Position start, Position end, DungeonLevel level) {
+        int x0 = start.x();
+        int y0 = start.y();
+        int x1 = end.x();
+        int y1 = end.y();
+
+        int dx = Math.abs(x1 - x0);
+        int dy = Math.abs(y1 - y0);
+        int sx = x0 < x1 ? 1 : -1;
+        int sy = y0 < y1 ? 1 : -1;
+        int err = dx - dy;
+
+        while (true) {
+            if (x0 == x1 && y0 == y1) return true; // reached the end
+
+            // Check if this tile blocks light
+            // Skip the starting tile (the monster's position)
+            if (x0 != start.x() || y0 != start.y()) {
+                Tile t = level.getTile(x0, y0);
+                if (t == null || t.getTerrain().blocksLight()) {
+                    return false;
+                }
+            }
+
+            int e2 = 2 * err;
+            if (e2 > -dy) {
+                err -= dy;
+                x0 += sx;
+            }
+            if (e2 < dx) {
+                err += dx;
+                y0 += sy;
+            }
+        }
     }
 
     private void attack(Monster attacker, Player target, GameManager gm) {

@@ -142,13 +142,14 @@ public class GameManager {
             Entity occupant = targetTile.getOccupant();
 
             // Player attacks monster
-            if (entity == player && occupant instanceof Creature) {
-                handleCombat(player, (Creature) occupant);
-                processTurn(); // Attacking counts as a turn
-                return true; // bumped into someone
+            if (occupant != entity) {
+                if (entity == player && occupant instanceof Creature) {
+                    handleCombat(player, (Creature) occupant);
+                    processTurn(); // Attacking counts as a turn
+                    return true; // bumped into someone
+                }
+                return false; // Monster bumping into monster
             }
-
-            return false; // Monster bumping into monster
         }
 
         // Move logic
@@ -229,12 +230,18 @@ public class GameManager {
      * @return The result message of the action.
      */
     public String useItem(int index) {
-        if (player == null) return "No player found.";
+        if (player == null) {
+            log("No player found.");
+            return "No player found.";
+        }
 
         Inventory inv = player.getInventory();
         Item item = inv.get(index);
 
-        if (item == null) return "No item in that slot.";
+        if (item == null) {
+            log("No item in that slot.");
+            return "No item in that slot.";
+        }
 
         // Execute item logic
         String message = item.use(player);
@@ -242,6 +249,7 @@ public class GameManager {
         // Handle consumption
         if (item.isConsumable()) inv.remove(item);
 
+        log(message);
         return message;
     }
 
