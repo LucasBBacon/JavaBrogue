@@ -2,8 +2,9 @@ package lucas.games.brogue.backend.entities;
 
 import lucas.games.brogue.backend.BrogueColor;
 import lucas.games.brogue.backend.Position;
-
-import java.util.List;
+import lucas.games.brogue.backend.entities.items.Armor;
+import lucas.games.brogue.backend.entities.items.Item;
+import lucas.games.brogue.backend.entities.items.Weapon;
 
 /**
  * The user-controlled character.
@@ -12,7 +13,11 @@ import java.util.List;
 public class Player extends Creature {
 
     private final Inventory inventory;
-    private int damage;
+    private int baseDamage;
+
+    // Equipment slots
+    private Weapon equippedWeapon;
+    private Armor equippedArmor;
 
     public Player(Position startPosition) {
         super(
@@ -23,25 +28,55 @@ public class Player extends Creature {
                 100 // Standard Brogue starting HP
         );
         this.inventory = new Inventory();
-        this.damage = 10; // Standard Brogue starting damage
+        this.baseDamage = 5; // Standard Brogue starting damage
     }
 
     @Override
     protected void levelUp() {
         super.levelUp();
         // Player gains damage on level up
-        this.damage += 2;
+        this.baseDamage += 1;
     }
 
-    public Inventory getInventory() {
-        return inventory;
+    @Override
+    public String equip(Item item) {
+        if (item instanceof Weapon) {
+            if (equippedWeapon == item) {
+                equippedWeapon = null;
+                return "You unequip the " + item.getName() + ".";
+            }
+            equippedWeapon = (Weapon) item;
+            return "You wield the " + item.getName() + ".";
+        }
+
+        if (item instanceof Armor) {
+            if (equippedArmor == item) {
+                equippedArmor = null;
+                return "You take off the " + item.getName() + ".";
+            }
+            equippedArmor = (Armor) item;
+            return "You put on the " + item.getName() + ".";
+        }
+        return "You cannot equip that.";
     }
 
-    public int getDamage() {
-        return damage;
+    public int getTotalDamage() {
+        int dmg = baseDamage;
+        if (equippedWeapon != null) {
+            dmg += equippedWeapon.getDamageBonus();
+        }
+        return dmg;
     }
 
-    public void setDamage(int damage) {
-        this.damage = damage;
+    public int getTotalDefense() {
+        if (equippedArmor != null) {
+            return equippedArmor.getDefense();
+        }
+        return 0;
     }
+
+    public Inventory getInventory() { return inventory; }
+    public Weapon getEquippedWeapon() { return equippedWeapon; }
+    public Armor getEquippedArmor() { return equippedArmor; }
+    public int getBaseDamage() { return baseDamage;}
 }

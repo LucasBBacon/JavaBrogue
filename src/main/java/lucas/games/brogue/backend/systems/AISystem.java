@@ -38,7 +38,7 @@ public class AISystem {
         if (!hasLineOfSight(monsterPos, playerPos, gameManager.getDungeonLevel())) return;
 
         // 3. Combat or move
-        if (distance < 1.5) attack(monster, player, gameManager); // adjacent, diagonals are ~1.4
+        if (distance < 1.5) gameManager.handleMonsterAttack(monster, player); // adjacent, diagonals are ~1.4
         else moveTowards(monster, playerPos, gameManager); // move closer
     }
 
@@ -79,18 +79,6 @@ public class AISystem {
                 err += dx;
                 y0 += sy;
             }
-        }
-    }
-
-    private void attack(Monster attacker, Player target, GameManager gm) {
-        // Simple combat logic
-        int damage = attacker.getDamage();
-        target.takeDamage(damage);
-
-        gm.log("The " + attacker.getName() + " hits you for " + damage + " damage!");
-
-        if (target.isDead()) {
-            gm.log("You die...");
         }
     }
 

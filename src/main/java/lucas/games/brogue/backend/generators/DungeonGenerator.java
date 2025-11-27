@@ -5,8 +5,10 @@ import lucas.games.brogue.backend.data.MonsterTemplate;
 import lucas.games.brogue.backend.data.SpawnTable;
 import lucas.games.brogue.backend.entities.Entity;
 import lucas.games.brogue.backend.entities.Monster;
+import lucas.games.brogue.backend.entities.items.Armor;
 import lucas.games.brogue.backend.entities.items.Food;
 import lucas.games.brogue.backend.entities.items.Gold;
+import lucas.games.brogue.backend.entities.items.Weapon;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -168,11 +170,16 @@ public class DungeonGenerator {
 
         // Loot scaling - Food becomes rarer deeper down
         if (random.randomPercent(40)) {
-            // 30% chance for Food, otherwise Gold
-            if (random.randomPercent(30 - depth)) {
+            int roll = random.randomInteger(100);
+
+            if (roll < 40) { // 40% food
                 list.add(new Food(pos));
-            } else {
+            } else if (roll < 70) { // 30% gold
                 list.add(new Gold(pos));
+            } else if (roll < 85) { // 15% Weapon
+                list.add(new Weapon(pos, "Dagger", 4));
+            } else { // 15% armor
+                list.add(new Armor(pos, "Leather Armor", 2));
             }
         }
     }

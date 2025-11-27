@@ -2,6 +2,7 @@ package lucas.games.brogue.backend.entities;
 
 import lucas.games.brogue.backend.BrogueColor;
 import lucas.games.brogue.backend.Position;
+import lucas.games.brogue.backend.entities.items.Item;
 
 /**
  * Represents a living entity with Health, a Name, and mortality.
@@ -37,7 +38,6 @@ public class Creature extends Entity {
     public int getLevel()      { return level; }
     public int getExperience() { return experience; }
     public int getXpValue()    { return xpValue; }
-
     public void setXpValue(int xpValue) { this.xpValue = xpValue; }
 
     public boolean isDead() {
@@ -84,5 +84,13 @@ public class Creature extends Entity {
     // Allow manual setting for initialization or testing
     protected void setMaxHp(int maxHp) {
         this.maxHp = maxHp;
+    }
+
+    /**
+     * Attempts to equip an item.
+     * @return Message describing the result.
+     */
+    public String equip(Item item) {
+        return "You cannot equip that.";
     }
 }

@@ -1,9 +1,6 @@
 package lucas.games.brogue.backend;
 
-import lucas.games.brogue.backend.entities.Creature;
-import lucas.games.brogue.backend.entities.Entity;
-import lucas.games.brogue.backend.entities.Inventory;
-import lucas.games.brogue.backend.entities.Player;
+import lucas.games.brogue.backend.entities.*;
 import lucas.games.brogue.backend.entities.items.Item;
 import lucas.games.brogue.backend.generators.DungeonGenerator;
 import lucas.games.brogue.backend.systems.AISystem;
@@ -42,7 +39,11 @@ public class GameManager {
 
     public void startNewGame(int seed) {
         this.currentDepth = 1;
+        this.player = null;
+        this.entities.clear();
         generateLevel(seed);
+
+        log("Started a new game.");
 
         // For a new game, we create a fresh player
         // The generator returns the start position
@@ -57,15 +58,18 @@ public class GameManager {
      */
     private void generateLevel(int seed) {
         // Clear entities list but KEEP the player if they exist
-        entities.clear();
-        if (player != null) {
-            entities.add(player);
+        List<Entity> preservedEntities = new ArrayList<>();
+        if (this.player != null) {
+            preservedEntities.add(this.player);
         }
+        this.entities.clear();
+        this.entities.addAll(preservedEntities);
 
         DungeonGenerator generator = new DungeonGenerator(dungeonLevel, seed, currentDepth);
 
         // Pass entities list to populate
         List<Entity> newEntities = new ArrayList<>();
+
         Position startPos = generator.generate(newEntities);
 
         // Spawn generated loot
@@ -84,6 +88,7 @@ public class GameManager {
 
         log("--- Depth " + currentDepth + " ---");
         updatePlayerFOV();
+        System.out.println(entities.toString());
     }
 
     public void generateDungeon(int seed) {
@@ -211,10 +216,16 @@ public class GameManager {
     }
 
     private void handleCombat(Player attacker, Creature target) {
-        int damage = attacker.getDamage();
-        target.takeDamage(damage);
+        int rawDamage = attacker.getTotalDamage();
 
-        log("You hit the " + target.getName() + " for " + damage + " damage.");
+        // Defense calculation
+        int defense = 0;
+        // TODO: In future if monsters wear armor, place here
+
+        int finalDamage = Math.max(1, rawDamage - defense);
+
+        target.takeDamage(finalDamage);
+        log("You hit the " + target.getName() + " for " + finalDamage + " damage.");
 
         if (target.isDead()) {
             log ("The " + target.getName() + " dies.");
@@ -236,6 +247,28 @@ public class GameManager {
 
             // Remove from entity list
             entities.remove(target);
+        }
+    }
+
+    public void handleMonsterAttack(Creature attacker, Player target) {
+        int rawDamage = 0;
+        if (attacker instanceof Monster) {
+            rawDamage = ((Monster) attacker).getDamage();
+        }
+
+        int defense = target.getTotalDefense();
+        int finalDamage = Math.max(0, rawDamage - defense);
+
+        target.takeDamage(finalDamage);
+
+        if (finalDamage > 0) {
+            log("The " + attacker.getName() + " hits you for " + finalDamage + " damage!");
+        } else {
+            log ("The " + attacker.getName() + " attacks but your armor absorbs the blow!");
+        }
+
+        if (target.isDead()) {
+            log("You die...");
         }
     }
 

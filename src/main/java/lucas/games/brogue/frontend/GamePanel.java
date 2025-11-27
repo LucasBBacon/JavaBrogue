@@ -4,6 +4,8 @@ import lucas.games.brogue.backend.BrogueColor;
 import lucas.games.brogue.backend.DungeonLevel;
 import lucas.games.brogue.backend.GameManager;
 import lucas.games.brogue.backend.Tile;
+import lucas.games.brogue.backend.entities.Inventory;
+import lucas.games.brogue.backend.entities.items.Item;
 import lucas.games.brogue.backend.views.MessageLog;
 
 import javax.swing.*;
@@ -15,13 +17,15 @@ public class GamePanel extends JPanel {
     private final GameManager gameManager;
     private final int tileSize = 16; // pixels per char
     private final Font terminalFont;
+    private final Font uiFont;
 
     public GamePanel(GameManager gameManager) {
         this.gameManager = gameManager;
-        this.setPreferredSize(new Dimension(800, 600));
+        this.setPreferredSize(new Dimension(1000, 600));
         this.setBackground(Color.BLACK);
         // Load a Monospaced font
         this.terminalFont = new Font("Monospaced", Font.BOLD, tileSize);
+        this.uiFont = new Font("Monospaced", Font.PLAIN, 14);
     }
 
     @Override
@@ -35,9 +39,11 @@ public class GamePanel extends JPanel {
 
         renderDungeon(g2d);
         renderUI(g2d);
+        renderInventory(g2d);
     }
 
     private void renderDungeon(Graphics2D g) {
+        g.setFont(terminalFont);
         DungeonLevel level = gameManager.getDungeonLevel();
         if (level == null) return;
 
@@ -93,17 +99,19 @@ public class GamePanel extends JPanel {
     }
 
     private void renderUI(Graphics2D g) {
+        g.setFont(terminalFont);
         g.setColor(Color.WHITE);
         int bottomY = this.getHeight() - 100;
         int startX = 20;
 
         // Player stats
         if (gameManager.getPlayer() != null) {
-            String stats = String.format("Depth: %d   HP: %d/%d   Damage: %d   Lvl: %d   XP: %d",
+            String stats = String.format("Depth: %d   HP: %d/%d   Dmg: %d   Def: %d   Lvl: %d   XP: %d",
                     gameManager.getCurrentDepth(),
                     gameManager.getPlayer().getCurrentHp(),
                     gameManager.getPlayer().getMaxHp(),
-                    gameManager.getPlayer().getDamage(),
+                    gameManager.getPlayer().getTotalDamage(),
+                    gameManager.getPlayer().getTotalDefense(),
                     gameManager.getPlayer().getLevel(),
                     gameManager.getPlayer().getExperience()
             );
@@ -118,6 +126,37 @@ public class GamePanel extends JPanel {
         for (String msg : messages) {
             g.drawString("> " + msg, startX, msgY);
             msgY += 18;
+        }
+    }
+
+    private void renderInventory(Graphics2D g) {
+        if (gameManager.getPlayer() == null) return;
+
+        g.setFont(uiFont);
+        g.setColor(Color.WHITE);
+
+        int startX = 820; // right side
+        int startY = 40;
+
+        g.drawString("--- PACK ---", startX, startY);
+        startY += 20;
+
+        Inventory inv = gameManager.getPlayer().getInventory();
+        for (int i = 0; i < inv.size(); i++) {
+            Item item = inv.get(i);
+            String label = (i + 1) + ". " + item.getName();
+
+            // Mark equipped items
+            if (item == gameManager.getPlayer().getEquippedWeapon() ||
+                item == gameManager.getPlayer().getEquippedArmor()) {
+                label += " (E)";
+                g.setColor(Color.CYAN);
+            } else {
+                g.setColor(Color.LIGHT_GRAY);
+            }
+
+            g.drawString(label, startX, startY);
+            startY += 18;
         }
     }
 }
