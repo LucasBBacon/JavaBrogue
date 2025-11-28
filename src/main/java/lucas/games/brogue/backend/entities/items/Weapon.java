@@ -1,12 +1,13 @@
 package lucas.games.brogue.backend.entities.items;
 
 import lucas.games.brogue.backend.BrogueColor;
+import lucas.games.brogue.backend.GameManager;
 import lucas.games.brogue.backend.Position;
 import lucas.games.brogue.backend.entities.Creature;
 
 public class Weapon extends Item {
 
-    private final int damageBonus;
+    private int damageBonus;
 
     public Weapon(Position position, String name, int damageBonus) {
         // Weapons are typically blue-ish in Brogue
@@ -22,8 +23,12 @@ public class Weapon extends Item {
 
     public int getDamageBonus() { return damageBonus; }
 
+    public void enchant(int amount) {
+        this.damageBonus += amount;
+    }
+
     @Override
-    public String use(Creature user) {
+    public String use(Creature user, GameManager gameManager) {
         return user.equip(this);
     }
 

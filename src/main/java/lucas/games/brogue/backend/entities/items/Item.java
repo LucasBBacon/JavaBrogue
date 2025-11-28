@@ -1,6 +1,7 @@
 package lucas.games.brogue.backend.entities.items;
 
 import lucas.games.brogue.backend.BrogueColor;
+import lucas.games.brogue.backend.GameManager;
 import lucas.games.brogue.backend.Position;
 import lucas.games.brogue.backend.entities.Creature;
 import lucas.games.brogue.backend.entities.Entity;
@@ -31,9 +32,10 @@ public abstract class Item extends Entity {
     /**
      * Triggers the item's primary effect on the user.
      * @param user The creature using the item.
+     * @param gameManager Context for the world interactions.
      * @return A message describing what happened.
      */
-    public abstract String use(Creature user);
+    public abstract String use(Creature user, GameManager gameManager);
 
     /**
      * @return true if the item should be removed from inventory after use.

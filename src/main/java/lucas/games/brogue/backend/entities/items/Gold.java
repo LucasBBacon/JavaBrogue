@@ -1,6 +1,7 @@
 package lucas.games.brogue.backend.entities.items;
 
 import lucas.games.brogue.backend.BrogueColor;
+import lucas.games.brogue.backend.GameManager;
 import lucas.games.brogue.backend.Position;
 import lucas.games.brogue.backend.entities.Creature;
 
@@ -14,7 +15,7 @@ public class Gold extends Item {
     }
 
     @Override
-    public String use(Creature user) {
+    public String use(Creature user, GameManager gameManager) {
         return "You cannot use gold directly. Spend it in shops!";
     }
 

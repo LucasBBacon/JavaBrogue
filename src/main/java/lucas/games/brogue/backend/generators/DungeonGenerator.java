@@ -5,10 +5,7 @@ import lucas.games.brogue.backend.data.MonsterTemplate;
 import lucas.games.brogue.backend.data.SpawnTable;
 import lucas.games.brogue.backend.entities.Entity;
 import lucas.games.brogue.backend.entities.Monster;
-import lucas.games.brogue.backend.entities.items.Armor;
-import lucas.games.brogue.backend.entities.items.Food;
-import lucas.games.brogue.backend.entities.items.Gold;
-import lucas.games.brogue.backend.entities.items.Weapon;
+import lucas.games.brogue.backend.entities.items.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,13 +33,13 @@ public class DungeonGenerator {
         SpawnTable table = new SpawnTable();
 
         // Define templates
-        MonsterTemplate rat    = new MonsterTemplate("Rat", 'r', new BrogueColor(0.5, 0.3, 0.1),
+        MonsterTemplate rat    = new MonsterTemplate("Rat",    'r', new BrogueColor(0.5, 0.3, 0.1),
                 6, 2, 6);
         MonsterTemplate kobold = new MonsterTemplate("Kobold", 'K', new BrogueColor(0.8, 0.0, 0.0),
                 15, 4, 8);
         MonsterTemplate goblin = new MonsterTemplate("Goblin", 'G', new BrogueColor(0.0, 0.8, 0.0),
                 25, 6, 9);
-        MonsterTemplate ogre   = new MonsterTemplate("Ogre", 'O', new BrogueColor(0.2, 0.6, 0.2),
+        MonsterTemplate ogre   = new MonsterTemplate("Ogre",   'O', new BrogueColor(0.2, 0.6, 0.2),
                 50, 12, 10);
 
         // Define rules: (Template, minDepth, maxDepth, weight)
@@ -172,14 +169,18 @@ public class DungeonGenerator {
         if (random.randomPercent(40)) {
             int roll = random.randomInteger(100);
 
-            if (roll < 40) { // 40% food
+            if (roll < 35) { // 35% food
                 list.add(new Food(pos));
-            } else if (roll < 70) { // 30% gold
+            } else if (roll < 60) { // 25% gold
                 list.add(new Gold(pos));
-            } else if (roll < 85) { // 15% Weapon
+            } else if (roll < 75) { // 15% Weapon
                 list.add(new Weapon(pos, "Dagger", 4));
-            } else { // 15% armor
+            } else if (roll < 85) { // 10% armor
                 list.add(new Armor(pos, "Leather Armor", 2));
+            } else if (roll < 95) { // 10% Scroll of teleport
+                list.add(new ScrollTeleportation(pos));
+            } else { // 5% Scroll of enchanting
+                list.add(new ScrollEnchanting(pos));
             }
         }
     }

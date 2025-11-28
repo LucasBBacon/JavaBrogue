@@ -326,7 +326,7 @@ public class GameManager {
         }
 
         // Execute item logic
-        String message = item.use(player);
+        String message = item.use(player, this);
 
         // Handle consumption
         if (item.isConsumable()) inv.remove(item);
