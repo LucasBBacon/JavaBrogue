@@ -1,718 +1,218 @@
 package lucas.games.brogue.backend;
 
 import java.util.Arrays;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
-import java.util.stream.IntStream;
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 public class Grid {
 
-    private final Tile[][] grid;
-    private final Tile[][] playerMap;
+    private final int cols;
+    private final int rows;
+    private final Tile[][] tiles;
 
-    public Grid(Tile[][] grid) {
-        this.grid = grid;
-        this.playerMap = new Tile[grid.length][grid[0].length];
+    private Grid(Builder builder) {
+        this.cols = builder.cols;
+        this.rows = builder.rows;
+        this.tiles = builder.tiles;
     }
 
-    public GridEditor edit() {
-        return new GridEditor(this);
+    public int getCols() { return cols; }
+    public int getRows() { return rows; }
+
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public Tile[][] getGrid() {
-        return grid;
+    public Tile getTile(int col, int row) {
+        return tiles[row][col];
     }
 
-    public boolean tileHasFlag(int x, int y, int flag) {
-        Tile tile = grid[x][y];
-        return tile.hasTerrainFlag(flag);
+    public boolean isInBounds(int col, int row) {
+        return col >= 0 && col < cols && row >= 0 && row < rows;
     }
 
-    public boolean tileHasFlag(Position position, int flag) {
-        Tile tile = grid[position.x()][position.y()];
-        return tile.hasTerrainFlag(flag);
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Grid grid = (Grid) o;
+        return Objects.deepEquals(tiles, grid.tiles);
     }
 
-    public void calculateDistances(Position destination, int blockingTerrainFlags, Creature traveller, boolean canUseSecretDoors, boolean eightWays) {
-
+    @Override
+    public int hashCode() {
+        return Arrays.deepHashCode(tiles);
     }
 
-    public static class GridEditor {
+    @Override
+    public String toString() {
+        if (tiles == null) return super.toString();
 
-        private final Tile[][] grid;
+        StringBuilder sb = new StringBuilder();
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                Tile tile = tiles[row][col];
+                sb.append(tile == null ? "null" : tile.type().name());
+                if (col < cols - 1) sb.append(' ');
+            }
+            if (row < rows - 1) sb.append(System.lineSeparator());
+        }
+        return sb.toString();
+    }
 
-        public GridEditor(Grid source) {
-            this.grid = new Tile[Constants.DCOLS][Constants.DROWS];
-            for (int x = 0; x < Constants.DCOLS; x++) {
-                System.arraycopy(source.grid[x], 0, this.grid[x], 0, source.grid[x].length);
+    public static class Builder {
+
+        public static final int DEFAULT_COLS = 20;
+        public static final int DEFAULT_ROWS = 10;
+
+        private int cols = DEFAULT_COLS;
+        private int rows = DEFAULT_ROWS;
+        private Tile[][] tiles;
+
+        public Builder withDimensions(int cols, int rows) {
+            this.cols = cols;
+            this.rows = rows;
+            return this;
+        }
+
+        public Builder withTiles(Tile[][] tiles) {
+            this.tiles = tiles;
+            this.rows = tiles.length;
+            this.cols = tiles[0].length;
+            return this;
+        }
+
+        private void initializeGrid() {
+            this.tiles = new Tile[rows][cols];
+            for (int row = 0; row < this.rows; row++) {
+                for (int col = 0; col < this.cols; col++) {
+                    this.tiles[row][col] = new Tile();
+                }
             }
         }
 
         public Grid build() {
-            return new Grid(this.grid);
+            if (tiles == null) {
+                initializeGrid();
+            }
+            return new Grid(this);
+        }
+    }
+
+    public Edit edit() {
+        return new Edit(this);
+    }
+
+    public static class Edit {
+
+        private int cols;
+        private int rows;
+        private Tile[][] tiles;
+
+        private Edit(Grid grid) {
+            copy(grid);
         }
 
-        public GridEditor setTile(int x, int y, Tile tile) {
-            this.grid[x][y] = tile;
+        private boolean isInBounds(int col, int row) {
+            return col >= 0 && col < cols && row >= 0 && row < rows;
+        }
+
+        public Edit copy(Grid grid) {
+            this.cols = grid.cols;
+            this.rows = grid.rows;
+            this.tiles = new Tile[this.rows][this.cols];
+            for (int row = 0; row < this.rows; row++) {
+                for (int col = 0; col < this.cols; col++) {
+                    this.tiles[row][col] = grid.getTile(col, row);
+                }
+            }
             return this;
         }
 
-        public GridEditor replaceAll(Predicate<Tile> selector, UnaryOperator<Tile> transformer) {
-            for (int x = 0; x < Constants.DCOLS; x++) {
-                for (int y = 0; y < Constants.DROWS; y++) {
-                    Tile current = this.grid[x][y];
+        public Edit fill(Tile.TileType value) {
+            requireNonNull(value, "TileType value is required");
 
-                    if (selector.test(current)) {
-                        this.grid[x][y] = transformer.apply(current);
+            for (int row = 0; row < this.rows; row++) {
+                for (int col = 0; col < this.cols; col++) {
+                    this.tiles[row][col] = new Tile(value);
+                }
+            }
+            return this;
+        }
+
+        public Edit findReplace(Tile.TileType findValue, Tile.TileType fillValue) {
+            requireNonNull(findValue, "TileType to find is required");
+            requireNonNull(fillValue, "TileType to fill is required");
+
+            for (int row = 0; row < this.rows; row++) {
+                for (int col = 0; col < this.cols; col++) {
+                    if (this.tiles[row][col].type() == findValue) {
+                        this.tiles[row][col] = new Tile(fillValue);
                     }
                 }
             }
             return this;
         }
 
-        public GridEditor transform(TileTransformer function) {
-            for (int x = 0; x < Constants.DROWS; x++) {
-                for (int y = 0; y < Constants.DCOLS; y++) {
-                    this.grid[x][y] = function.apply(x, y, this.grid[x][y]);
-                }
-            }
-            return this;
-        }
+        public Edit floodFill(int col, int row, Tile.TileType targetValue, Tile.TileType fillValue) {
+            requireNonNull(targetValue, "TileType to replace is required");
+            requireNonNull(fillValue, "TileType to fill is required");
 
-    /*
-short[][] will be replaced with a Tile[][] class in Java.
-Grids will be immutable objects in Java, so allocation and freeing are not necessary.
-Required functions from C version:
-short **allocGrid() {
-    short i;
-    short **array = malloc(DCOLS * sizeof(short *));
+            if (!this.isInBounds(col, row)) return this;
 
-    array[0] = malloc(DROWS * DCOLS * sizeof(short));
-    for(i = 1; i < DCOLS; i++) {
-        array[i] = array[0] + i * DROWS;
-    }
-    return array;
-}
+            if (this.tiles[row][col].type() != targetValue || targetValue == fillValue) return this;
 
-void freeGrid(short **array) {
-    free(array[0]);
-    free(array);
-}
+            int[][] dirs = { {1,0}, {-1,0}, {0,1}, {0,-1} };
 
-void copyGrid(short **to, short **from) {
-    short i, j;
+            this.tiles[row][col] = new Tile(fillValue);
 
-    for(i = 0; i < DCOLS; i++) {
-        for(j = 0; j < DROWS; j++) {
-            to[i][j] = from[i][j];
-        }
-    }
-}
-    */
-
-        public GridEditor copyGrid(Tile[][] to) {
-            IntStream.range(0, Constants.DCOLS)
-                    .forEach(i ->
-                            System.arraycopy(this.grid[i], 0, to[i], 0, Constants.DROWS)
-                    );
-            return this;
-        }
-
-    /*
-void fillGrid(short **grid, short fillValue) {
-    short i, j;
-
-    for(i = 0; i < DCOLS; i++) {
-        for(j = 0; j < DROWS; j++) {
-            grid[i][j] = fillValue;
-        }
-    }
-}
-     */
-
-        public GridEditor fillGrid(Tile fillValue) {
-            for (int i = 0; i < Constants.DCOLS; i++) {
-                Arrays.fill(this.grid[i], fillValue);
-            }
-            return this;
-        }
-
-    /*
-
-// Highlight the portion indicated by hiliteCharGrid with the hiliteColor at the hiliteStrength -- both latter arguments are optional.
-void hiliteGrid(short **grid, const color *hiliteColor, short hiliteStrength) {
-    short i, j, x, y;
-    color hCol;
-
-    assureCosmeticRNG;
-
-    if (hiliteColor) {
-        hCol = *hiliteColor;
-    } else {
-        hCol = yellow;
-    }
-
-    bakeColor(&hCol);
-
-    if (!hiliteStrength) {
-        hiliteStrength = 75;
-    }
-
-    for (i=0; i<DCOLS; i++) {
-        for (j=0; j<DROWS; j++) {
-            if (grid[i][j]) {
-                x = mapToWindowX(i);
-                y = mapToWindowY(j);
-
-                cellDisplayBuffer *cell = &displayBuffer.cells[x][y];
-                cell->backColorComponents[0] = clamp(cell->backColorComponents[0] + hCol.red * hiliteStrength / 100, 0, 100);
-                cell->backColorComponents[1] = clamp(cell->backColorComponents[1] + hCol.green * hiliteStrength / 100, 0, 100);
-                cell->backColorComponents[2] = clamp(cell->backColorComponents[2] + hCol.blue * hiliteStrength / 100, 0, 100);
-                cell->foreColorComponents[0] = clamp(cell->foreColorComponents[0] + hCol.red * hiliteStrength / 100, 0, 100);
-                cell->foreColorComponents[1] = clamp(cell->foreColorComponents[1] + hCol.green * hiliteStrength / 100, 0, 100);
-                cell->foreColorComponents[2] = clamp(cell->foreColorComponents[2] + hCol.blue * hiliteStrength / 100, 0, 100);
-            }
-        }
-    }
-    restoreRNG;
-}
-
-    */
-
-        public void highlightGrid(Tile[][] grid, final BrogueColor highlightColor, double highlightStrength) {
-
-            BrogueColor hCol = highlightColor != null
-                    ? highlightColor
-                    : new BrogueColor(1.0, 1.0, 0.0); // default to yellow
-
-            if (highlightStrength == 0) {
-                highlightStrength = 75;
-            }
-
-            for (int i = 0; i < Constants.DCOLS; i++) {
-                for (int j = 0; j < Constants.DROWS; j++) {
-                    if (grid[i][j] != null) {
-                        BrogueColor backgroundColor = grid[i][j].buffer()
-                                .getBackgroundColor()
-                                .add(hCol.scale(highlightStrength))
-                                .clamp();
-                        grid[i][j].buffer()
-                                .setBackgroundColor(backgroundColor);
-                        BrogueColor foregroundColor = grid[i][j].buffer()
-                                .getForegroundColor()
-                                .add(hCol.scale(highlightStrength))
-                                .clamp();
-                        grid[i][j].buffer()
-                                .setForegroundColor(foregroundColor);
-                    }
-                }
-            }
-        }
-
-    /*
-
-void findReplaceGrid(short **grid, short findValueMin, short findValueMax, short fillValue) {
-    short i, j;
-
-    for(i = 0; i < DCOLS; i++) {
-        for(j = 0; j < DROWS; j++) {
-            if (grid[i][j] >= findValueMin && grid[i][j] <= findValueMax) {
-                grid[i][j] = fillValue;
-            }
-        }
-    }
-}
-
-    */
-
-        public GridEditor findReplace(TileType findValueMin, TileType findValueMax, TileType fillValue) {
-            for (int i = 0; i < Constants.DCOLS; i++) {
-                for (int j = 0; j < Constants.DROWS; j++) {
-                    if (grid[i][j].type().ordinal() >= findValueMin.ordinal()
-                            && grid[i][j].type().ordinal() <= findValueMax.ordinal()) {
-                        this.grid[i][j] = new Tile(fillValue, grid[i][j].buffer(), grid[i][j].terrainFlags());
-                    } else {
-                        this.grid[i][j] = grid[i][j];
+            for (int[] dir: dirs) {
+                int nextRow = row + dir[1];
+                int nextCol = col + dir[0];
+                if (nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
+                    Tile.TileType nextType = this.tiles[nextRow][nextCol].type();
+                    if (nextType == targetValue) {
+                        floodFill(nextCol, nextRow, targetValue, fillValue);
                     }
                 }
             }
             return this;
         }
 
-    /*
+        public Edit drawRectangle(int col, int row, int width, int height, Tile.TileType fillValue) {
+            requireNonNull(fillValue, "TileType to draw is required");
+            if (!isInBounds(col, row)) return this;
+            if (width <= 0 || height <= 0) return this;
 
-// Flood-fills the grid from (x, y) along cells that are within the eligible range.
-// Returns the total count of filled cells.
-short floodFillGrid(short **grid, short x, short y, short eligibleValueMin, short eligibleValueMax, short fillValue) {
-    enum directions dir;
-    short newX, newY, fillCount = 1;
-
-    brogueAssert(fillValue < eligibleValueMin || fillValue > eligibleValueMax);
-
-    grid[x][y] = fillValue;
-    for (dir = 0; dir < 4; dir++) {
-        newX = x + nbDirs[dir][0];
-        newY = y + nbDirs[dir][1];
-        if (coordinatesAreInMap(newX, newY)
-            && grid[newX][newY] >= eligibleValueMin
-            && grid[newX][newY] <= eligibleValueMax) {
-            fillCount += floodFillGrid(grid, newX, newY, eligibleValueMin, eligibleValueMax, fillValue);
-        }
-    }
-    return fillCount;
-}
-
-void drawRectangleOnGrid(short **grid, short x, short y, short width, short height, short value) {
-    short i, j;
-
-    for (i=x; i < x+width; i++) {
-        for (j=y; j<y+height; j++) {
-            grid[i][j] = value;
-        }
-    }
-}
-
-     */
-
-        public GridEditor drawRectangle(int x, int y, int width, int height, Tile value) {
-            for (int i = x; i < x + width; i++) {
-                for (int j = y; j < y + height; j++) {
-                    this.grid[i][j] = value;
-                }
-            }
-            return this;
-        }
-
-    /*
-
-void drawCircleOnGrid(short **grid, short x, short y, short radius, short value) {
-    short i, j;
-
-    for (i=max(0, x - radius - 1); i < max(DCOLS, x + radius); i++) {
-        for (j=max(0, y - radius - 1); j < max(DROWS, y + radius); j++) {
-            if ((i-x)*(i-x) + (j-y)*(j-y) < radius * radius + radius) {
-                grid[i][j] = value;
-            }
-        }
-    }
-}
-
-    */
-
-        public GridEditor drawCircle(int x, int y, int radius, Tile value) {
-            for (int i = Math.max(0, x - radius - 1); i < Math.min(Constants.DCOLS, x + radius); i++) {
-                for (int j = Math.max(0, y - radius - 1); j < Math.min(Constants.DROWS, y + radius); j++) {
-                    if ((i - x) * (i - x) + (j - y) * (j - y) < radius * radius + radius) {
-                        this.grid[i][j] = value;
+            for (int r = row; r < row + height; r++) {
+                for (int c = col; c < col + width; c++) {
+                    if (isInBounds(c, r) && this.tiles[r][c].type() != fillValue) {
+                        this.tiles[r][c] = new Tile(fillValue);
                     }
                 }
             }
             return this;
         }
-    /*
 
-// Fills grid locations with the given value if they match any terrain terrainFlags or map terrainFlags.
-// Otherwise does not change the grid location.
-void getTerrainGrid(short **grid, short value, unsigned long terrainFlags, unsigned long mapFlags) {
-    short i, j;
-    for(i = 0; i < DCOLS; i++) {
-        for(j = 0; j < DROWS; j++) {
-            if (grid[i][j] != value && cellHasTerrainFlag((pos){ i, j }, terrainFlags) || (pmap[i][j].terrainFlags & mapFlags)) {
-                grid[i][j] = value;
-            }
-        }
-    }
-}
+        public Edit drawCircle(int col, int row, int radius, Tile.TileType fillValue) {
+            requireNonNull(fillValue, "TileType to draw is required");
+            if (!isInBounds(col, row)) return this;
+            if (radius <= 0) return this;
 
-    */
-
-        public GridEditor getTerrain(Tile tile, int terrainFlag, int mapFlag) {
-            return replaceAll(t -> t != tile && t.hasTerrainFlag(terrainFlag) || t.hasTerrainFlag(mapFlag),
-                    t -> tile);
-        }
-    }
-
-
-
-    /*
-
-void getTMGrid(short **grid, short value, unsigned long TMflags) {
-    short i, j;
-    for(i = 0; i < DCOLS; i++) {
-        for(j = 0; j < DROWS; j++) {
-            if (grid[i][j] != value && cellHasTMFlag((pos){ i, j }, TMflags)) {
-                grid[i][j] = value;
-            }
-        }
-    }
-}
-
-static void getPassableArcGrid(short **grid, short minPassableArc, short maxPassableArc, short value) {
-    short i, j, count;
-    for(i = 0; i < DCOLS; i++) {
-        for(j = 0; j < DROWS; j++) {
-            if (grid[i][j] != value) {
-                count = passableArcCount(i, j);
-                if (count >= minPassableArc && count <= maxPassableArc) {
-                    grid[i][j] = value;
-                }
-            }
-        }
-    }
-}
-
-short validLocationCount(short **grid, short validValue) {
-    short i, j, count;
-    count = 0;
-    for(i = 0; i < DCOLS; i++) {
-        for(j = 0; j < DROWS; j++) {
-            if (grid[i][j] == validValue) {
-                count++;
-            }
-        }
-    }
-    return count;
-}
-
-static short leastPositiveValueInGrid(short **grid) {
-    short i, j, leastPositiveValue = 0;
-    for(i = 0; i < DCOLS; i++) {
-        for(j = 0; j < DROWS; j++) {
-            if (grid[i][j] > 0 && (leastPositiveValue == 0 || grid[i][j] < leastPositiveValue)) {
-                leastPositiveValue = grid[i][j];
-            }
-        }
-    }
-    return leastPositiveValue;
-}
-
-// Takes a grid as a mask of valid locations, chooses one randomly and returns it as (x, y).
-// If there are no valid locations, returns (-1, -1).
-void randomLocationInGrid(short **grid, short *x, short *y, short validValue) {
-    const short locationCount = validLocationCount(grid, validValue);
-    short i, j;
-
-    if (locationCount <= 0) {
-        *x = *y = -1;
-        return;
-    }
-    short index = rand_range(0, locationCount - 1);
-    for(i = 0; i < DCOLS && index >= 0; i++) {
-        for(j = 0; j < DROWS && index >= 0; j++) {
-            if (grid[i][j] == validValue) {
-                if (index == 0) {
-                    *x = i;
-                    *y = j;
-                }
-                index--;
-            }
-        }
-    }
-    return;
-}
-
-// Finds the lowest positive number in a grid, chooses one location with that number randomly and returns it as (x, y).
-// If there are no valid locations, returns INVALID_POS, aka (-1, -1).
-static pos randomLeastPositiveLocationInGrid(short **grid, boolean deterministic) {
-    const short targetValue = leastPositiveValueInGrid(grid);
-
-    if (targetValue == 0) {
-        return INVALID_POS;
-    }
-
-    short locationCount = 0;
-    for(int i = 0; i < DCOLS; i++) {
-        for(int j = 0; j < DROWS; j++) {
-            if (grid[i][j] == targetValue) {
-                locationCount++;
-            }
-        }
-    }
-
-    short index;
-    if (deterministic) {
-        index = locationCount / 2;
-    } else {
-        index = rand_range(0, locationCount - 1);
-    }
-
-    for(int i = 0; i < DCOLS && index >= 0; i++) {
-        for(int j = 0; j < DROWS && index >= 0; j++) {
-            if (grid[i][j] == targetValue) {
-                if (index == 0) {
-                    return (pos){ .x = i, .y = j };
-                }
-                index--;
-            }
-        }
-    }
-    // This should not be reachable, since we should have already hit
-    // the unique 'index == 0' point.
-    return INVALID_POS;
-}
-
-pos getQualifyingPathLocNear(
-    pos target,
-    boolean hallwaysAllowed,
-    unsigned long blockingTerrainFlags,
-    unsigned long blockingMapFlags,
-    unsigned long forbiddenTerrainFlags,
-    unsigned long forbiddenMapFlags,
-    boolean deterministic
-) {
-    short **grid, **costMap;
-
-    // First check the given location to see if it works, as an optimization.
-    if (!cellHasTerrainFlag(target, blockingTerrainFlags | forbiddenTerrainFlags)
-        && !(pmapAt(target)->terrainFlags & (blockingMapFlags | forbiddenMapFlags))
-        && (hallwaysAllowed || passableArcCount(target.x, target.y) <= 1)) {
-
-        return target;
-    }
-
-    // Allocate the grids.
-    grid = allocGrid();
-    costMap = allocGrid();
-
-    // Start with a base of a high number everywhere.
-    fillGrid(grid, 30000);
-    fillGrid(costMap, 1);
-
-    // Block off the pathing blockers.
-    getTerrainGrid(costMap, PDS_FORBIDDEN, blockingTerrainFlags, blockingMapFlags);
-    if (blockingTerrainFlags & (T_OBSTRUCTS_DIAGONAL_MOVEMENT | T_OBSTRUCTS_PASSABILITY)) {
-        getTerrainGrid(costMap, PDS_OBSTRUCTION, T_OBSTRUCTS_DIAGONAL_MOVEMENT, 0);
-    }
-
-    // Run the distance scan.
-    grid[target.x][target.y] = 1;
-    costMap[target.x][target.y] = 1;
-    dijkstraScan(grid, costMap, true);
-    findReplaceGrid(grid, 30000, 30000, 0);
-
-    // Block off invalid targets that aren't pathing blockers.
-    getTerrainGrid(grid, 0, forbiddenTerrainFlags, forbiddenMapFlags);
-    if (!hallwaysAllowed) {
-        getPassableArcGrid(grid, 2, 10, 0);
-    }
-
-    // Get the solution.
-    pos retLoc = randomLeastPositiveLocationInGrid(grid, deterministic);
-
-//    dumpLevelToScreen();
-//    displayGrid(grid);
-//    if (coordinatesAreInMap(*retValX, *retValY)) {
-//        hiliteCell(*retValX, *retValY, &yellow, 100, true);
-//    }
-//    temporaryMessage("Qualifying path selected:", REQUIRE_ACKNOWLEDGMENT);
-
-    freeGrid(grid);
-    freeGrid(costMap);
-
-    // Fall back to a pathing-agnostic alternative if there are no solutions.
-    if (isPosInMap(retLoc)) {
-        return retLoc;
-    }
-
-    pos loc;
-    if (getQualifyingLocNear(&loc, target, hallwaysAllowed, NULL,
-                                (blockingTerrainFlags | forbiddenTerrainFlags),
-                                (blockingMapFlags | forbiddenMapFlags),
-                                false, deterministic)) {
-        return loc;
-    } else {
-        return retLoc;
-    }
-
-}
-
-static void cellularAutomataRound(short **grid, char birthParameters[9], char survivalParameters[9]) {
-    short i, j, nbCount, newX, newY;
-    enum directions dir;
-    short **buffer2;
-
-    buffer2 = allocGrid();
-    copyGrid(buffer2, grid); // Make a backup of grid in buffer2, so that each generation is isolated.
-
-    for(i=0; i<DCOLS; i++) {
-        for(j=0; j<DROWS; j++) {
-            nbCount = 0;
-            for (dir=0; dir< DIRECTION_COUNT; dir++) {
-                newX = i + nbDirs[dir][0];
-                newY = j + nbDirs[dir][1];
-                if (coordinatesAreInMap(newX, newY)
-                    && buffer2[newX][newY]) {
-
-                    nbCount++;
-                }
-            }
-            if (!buffer2[i][j] && birthParameters[nbCount] == 't') {
-                grid[i][j] = 1; // birth
-            } else if (buffer2[i][j] && survivalParameters[nbCount] == 't') {
-                // survival
-            } else {
-                grid[i][j] = 0; // death
-            }
-        }
-    }
-
-    freeGrid(buffer2);
-}
-
-// Marks a cell as being a member of blobNumber, then recursively iterates through the rest of the blob
-static short fillContiguousRegion(short **grid, short x, short y, short fillValue) {
-    enum directions dir;
-    short newX, newY, numberOfCells = 1;
-
-    grid[x][y] = fillValue;
-
-    // Iterate through the four cardinal neighbors.
-    for (dir=0; dir<4; dir++) {
-        newX = x + nbDirs[dir][0];
-        newY = y + nbDirs[dir][1];
-        if (!coordinatesAreInMap(newX, newY)) {
-            break;
-        }
-        if (grid[newX][newY] == 1) { // If the neighbor is an unmarked region cell,
-            numberOfCells += fillContiguousRegion(grid, newX, newY, fillValue); // then recurse.
-        }
-    }
-    return numberOfCells;
-}
-
-// Loads up **grid with the results of a cellular automata simulation.
-void createBlobOnGrid(short **grid,
-                      short *retMinX, short *retMinY, short *retWidth, short *retHeight,
-                      short roundCount,
-                      short minBlobWidth, short minBlobHeight,
-                      short maxBlobWidth, short maxBlobHeight, short percentSeeded,
-                      char birthParameters[9], char survivalParameters[9]) {
-
-    short i, j, k;
-    short blobNumber, blobSize, topBlobNumber, topBlobSize;
-
-    short topBlobMinX, topBlobMinY, topBlobMaxX, topBlobMaxY, blobWidth, blobHeight;
-    //short buffer2[maxBlobWidth][maxBlobHeight]; // buffer[][] is already a global short array
-    boolean foundACellThisLine;
-
-    // Generate blobs until they satisfy the minBlobWidth and minBlobHeight restraints
-    do {
-        // Clear buffer.
-        fillGrid(grid, 0);
-
-        // Fill relevant portion with noise based on the percentSeeded argument.
-        for(i=0; i<maxBlobWidth; i++) {
-            for(j=0; j<maxBlobHeight; j++) {
-                grid[i][j] = (rand_percent(percentSeeded) ? 1 : 0);
-            }
-        }
-
-//        colorOverDungeon(&darkGray);
-//        hiliteGrid(grid, &white, 100);
-//        temporaryMessage("Random starting noise:", REQUIRE_ACKNOWLEDGMENT);
-
-        // Some iterations of cellular automata
-        for (k=0; k<roundCount; k++) {
-            cellularAutomataRound(grid, birthParameters, survivalParameters);
-
-//            colorOverDungeon(&darkGray);
-//            hiliteGrid(grid, &white, 100);
-//            temporaryMessage("Cellular automata progress:", REQUIRE_ACKNOWLEDGMENT);
-        }
-
-//        colorOverDungeon(&darkGray);
-//        hiliteGrid(grid, &white, 100);
-//        temporaryMessage("Cellular automata result:", REQUIRE_ACKNOWLEDGMENT);
-
-        // Now to measure the result. These are best-of variables; start them out at worst-case values.
-        topBlobSize =   0;
-        topBlobNumber = 0;
-        topBlobMinX =   maxBlobWidth;
-        topBlobMaxX =   0;
-        topBlobMinY =   maxBlobHeight;
-        topBlobMaxY =   0;
-
-        // Fill each blob with its own number, starting with 2 (since 1 means floor), and keeping track of the biggest:
-        blobNumber = 2;
-
-        for(i=0; i<DCOLS; i++) {
-            for(j=0; j<DROWS; j++) {
-                if (grid[i][j] == 1) { // an unmarked blob
-                    // Mark all the cells and returns the total size:
-                    blobSize = fillContiguousRegion(grid, i, j, blobNumber);
-                    if (blobSize > topBlobSize) { // if this blob is a new record
-                        topBlobSize = blobSize;
-                        topBlobNumber = blobNumber;
+            for (int r = Math.max(0, row - radius); r <= Math.min(rows - 1, row + radius); r++) {
+                for (int c = Math.max(0, col - radius); c <= Math.min(cols - 1, col + radius); c++) {
+                    int dx = c - col;
+                    int dy = r - row;
+                    if ((dx * dx + dy * dy <= radius * radius) && this.tiles[r][c].type() != fillValue) {
+                        this.tiles[r][c] = new Tile(fillValue);
                     }
-                    blobNumber++;
                 }
             }
+            return this;
         }
 
-        // Figure out the top blob's height and width:
-        // First find the max & min x:
-        for(i=0; i<DCOLS; i++) {
-            foundACellThisLine = false;
-            for(j=0; j<DROWS; j++) {
-                if (grid[i][j] == topBlobNumber) {
-                    foundACellThisLine = true;
-                    break;
-                }
-            }
-            if (foundACellThisLine) {
-                if (i < topBlobMinX) {
-                    topBlobMinX = i;
-                }
-                if (i > topBlobMaxX) {
-                    topBlobMaxX = i;
-                }
-            }
-        }
-
-        // Then the max & min y:
-        for(j=0; j<DROWS; j++) {
-            foundACellThisLine = false;
-            for(i=0; i<DCOLS; i++) {
-                if (grid[i][j] == topBlobNumber) {
-                    foundACellThisLine = true;
-                    break;
-                }
-            }
-            if (foundACellThisLine) {
-                if (j < topBlobMinY) {
-                    topBlobMinY = j;
-                }
-                if (j > topBlobMaxY) {
-                    topBlobMaxY = j;
-                }
-            }
-        }
-
-        blobWidth =     (topBlobMaxX - topBlobMinX) + 1;
-        blobHeight =    (topBlobMaxY - topBlobMinY) + 1;
-
-    } while (blobWidth < minBlobWidth
-             || blobHeight < minBlobHeight
-             || topBlobNumber == 0);
-
-    // Replace the winning blob with 1's, and everything else with 0's:
-    for(i=0; i<DCOLS; i++) {
-        for(j=0; j<DROWS; j++) {
-            if (grid[i][j] == topBlobNumber) {
-                grid[i][j] = 1;
-            } else {
-                grid[i][j] = 0;
-            }
+        public Grid build() {
+            return Grid.builder().withTiles(tiles).build();
         }
     }
-
-    // Populate the returned variables.
-    *retMinX = topBlobMinX;
-    *retMinY = topBlobMinY;
-    *retWidth = blobWidth;
-    *retHeight = blobHeight;
-}
-     */
-
-
 }
