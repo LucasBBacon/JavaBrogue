@@ -1,4 +1,4 @@
 package lucas.games.brogue.backend;
 
-public record Position(int x, int y) {
+public class Item {
 }
