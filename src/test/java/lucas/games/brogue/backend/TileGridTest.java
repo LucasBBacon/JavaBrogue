@@ -8,7 +8,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class GridTest {
+class TileGridTest {
 
     @Nested
     class BuilderTests {
@@ -16,29 +16,29 @@ class GridTest {
         @ParameterizedTest
         @CsvSource({"3, 5", "10, 50", "390, 200", "1, 3", "7, 7", "99, 83"})
         void gridBuilderReturnsAGridInstanceOfGivenDimensions(int cols, int rows) {
-            Grid grid = Grid.builder()
+            TileGrid tileGrid = TileGrid.builder()
                     .withDimensions(cols, rows)
                     .build();
 
-            assertThat(grid.getCols()).isEqualTo(cols);
-            assertThat(grid.getRows()).isEqualTo(rows);
+            assertThat(tileGrid.getCols()).isEqualTo(cols);
+            assertThat(tileGrid.getRows()).isEqualTo(rows);
         }
 
         @Test
         void gridBuilderReturnsAGridInstanceWithDefaultDimensionsWhenNoDimensionsAreGiven() {
-            Grid grid = Grid.builder().build();
+            TileGrid tileGrid = TileGrid.builder().build();
 
-            assertThat(grid.getCols()).isEqualTo(Grid.Builder.DEFAULT_COLS);
-            assertThat(grid.getRows()).isEqualTo(Grid.Builder.DEFAULT_ROWS);
+            assertThat(tileGrid.getCols()).isEqualTo(TileGrid.Builder.DEFAULT_COLS);
+            assertThat(tileGrid.getRows()).isEqualTo(TileGrid.Builder.DEFAULT_ROWS);
         }
 
         @Test
         void gridBuilderReturnsAGridInstanceWithAllTilesInitializedAsEmpty() {
-            Grid grid = Grid.builder().build();
+            TileGrid tileGrid = TileGrid.builder().build();
 
-            for (int row = 0; row < grid.getRows(); row++) {
-                for (int col = 0; col < grid.getCols(); col++) {
-                    assertTrue(grid.getTile(col, row).isEmpty());
+            for (int row = 0; row < tileGrid.getRows(); row++) {
+                for (int col = 0; col < tileGrid.getCols(); col++) {
+                    assertTrue(tileGrid.getTile(col, row).isEmpty());
                 }
             }
         }
@@ -52,31 +52,31 @@ class GridTest {
 
             @Test
             void copyReturnsEditInstanceWithSameDimensionsAndTilesAsGivenGrid() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(4, 6)
                         .build();
 
-                Grid editedGrid = grid.edit()
-                        .copy(grid)
+                TileGrid editedTileGrid = tileGrid.edit()
+                        .copy(tileGrid)
                         .build();
 
-                assertThat(editedGrid.getCols()).isEqualTo(grid.getCols());
-                assertThat(editedGrid.getRows()).isEqualTo(grid.getRows());
+                assertThat(editedTileGrid.getCols()).isEqualTo(tileGrid.getCols());
+                assertThat(editedTileGrid.getRows()).isEqualTo(tileGrid.getRows());
             }
 
             @Test
             void copyReturnsEditInstanceWithSameTilesAsGivenGrid() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(4, 6)
                         .build();
 
-                Grid editedGrid = grid.edit()
-                        .copy(grid)
+                TileGrid editedTileGrid = tileGrid.edit()
+                        .copy(tileGrid)
                         .build();
 
-                for (int row = 0; row < grid.getRows(); row++) {
-                    for (int col = 0; col < grid.getCols(); col++) {
-                        assertThat(editedGrid.getTile(col, row)).isEqualTo(grid.getTile(col, row));
+                for (int row = 0; row < tileGrid.getRows(); row++) {
+                    for (int col = 0; col < tileGrid.getCols(); col++) {
+                        assertThat(editedTileGrid.getTile(col, row)).isEqualTo(tileGrid.getTile(col, row));
                     }
                 }
             }
@@ -87,40 +87,40 @@ class GridTest {
 
             @Test
             void fillRequiresTileTypeParameter() {
-                Grid grid = Grid.builder().build();
+                TileGrid tileGrid = TileGrid.builder().build();
 
                 assertThatExceptionOfType(NullPointerException.class)
-                        .isThrownBy(() -> grid.edit().fill(null).build())
+                        .isThrownBy(() -> tileGrid.edit().fill(null).build())
                         .withMessage("TileType value is required");
             }
 
             @Test
             void fillReturnsNewGridInstance() {
-                Grid grid = Grid.builder().build();
+                TileGrid tileGrid = TileGrid.builder().build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .fill(Tile.TileType.WALL)
                         .build();
 
-                assertThat(editedGrid).isNotSameAs(grid);
+                assertThat(editedTileGrid).isNotSameAs(tileGrid);
             }
 
             @Test
             void fillReturnsNewGridInstanceWithAllTilesWithSpecificValue() {
-                Grid grid = Grid.builder().build();
+                TileGrid tileGrid = TileGrid.builder().build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .fill(Tile.TileType.WALL)
                         .build();
 
-                for (int col = 0; col < grid.getCols(); col++) {
-                    for (int row = 0; row < grid.getRows(); row++) {
-                        assertThat(grid.getTile(col, row).type()).isEqualTo(Tile.TileType.EMPTY);
+                for (int col = 0; col < tileGrid.getCols(); col++) {
+                    for (int row = 0; row < tileGrid.getRows(); row++) {
+                        assertThat(tileGrid.getTile(col, row).type()).isEqualTo(Tile.TileType.EMPTY);
                     }
                 }
-                for (int col = 0; col < editedGrid.getCols(); col++) {
-                    for (int row = 0; row < editedGrid.getRows(); row++) {
-                        assertThat(editedGrid.getTile(col, row).type()).isEqualTo(Tile.TileType.WALL);
+                for (int col = 0; col < editedTileGrid.getCols(); col++) {
+                    for (int row = 0; row < editedTileGrid.getRows(); row++) {
+                        assertThat(editedTileGrid.getTile(col, row).type()).isEqualTo(Tile.TileType.WALL);
                     }
                 }
             }
@@ -132,14 +132,14 @@ class GridTest {
 
             @Test
             void findReplaceRequiresTileTypeParameters() {
-                Grid grid = Grid.builder().build();
+                TileGrid tileGrid = TileGrid.builder().build();
 
                 assertThatExceptionOfType(NullPointerException.class)
-                        .isThrownBy(() -> grid.edit().findReplace(null, Tile.TileType.WALL).build())
+                        .isThrownBy(() -> tileGrid.edit().findReplace(null, Tile.TileType.WALL).build())
                         .withMessage("TileType to find is required");
 
                 assertThatExceptionOfType(NullPointerException.class)
-                        .isThrownBy(() -> grid.edit().findReplace(Tile.TileType.EMPTY, null).build())
+                        .isThrownBy(() -> tileGrid.edit().findReplace(Tile.TileType.EMPTY, null).build())
                         .withMessage("TileType to fill is required");
             }
 
@@ -151,20 +151,20 @@ class GridTest {
                         {new Tile(Tile.TileType.EMPTY), new Tile(Tile.TileType.EMPTY), new Tile(Tile.TileType.WALL)}
                 };
 
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withTiles(tiles)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .findReplace(Tile.TileType.WALL, Tile.TileType.WATER)
                         .build();
 
-                for (int row = 0; row < grid.getRows(); row++) {
-                    for (int col = 0; col < grid.getCols(); col++) {
-                        if (grid.getTile(col, row).type() == Tile.TileType.WALL) {
-                            assertThat(editedGrid.getTile(col, row).type()).isEqualTo(Tile.TileType.WATER);
+                for (int row = 0; row < tileGrid.getRows(); row++) {
+                    for (int col = 0; col < tileGrid.getCols(); col++) {
+                        if (tileGrid.getTile(col, row).type() == Tile.TileType.WALL) {
+                            assertThat(editedTileGrid.getTile(col, row).type()).isEqualTo(Tile.TileType.WATER);
                         } else {
-                            assertThat(editedGrid.getTile(col, row).type()).isEqualTo(grid.getTile(col, row).type());
+                            assertThat(editedTileGrid.getTile(col, row).type()).isEqualTo(tileGrid.getTile(col, row).type());
                         }
                     }
                 }
@@ -178,15 +178,15 @@ class GridTest {
                         {new Tile(Tile.TileType.EMPTY), new Tile(Tile.TileType.EMPTY), new Tile(Tile.TileType.EMPTY)}
                 };
 
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withTiles(tiles)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .findReplace(Tile.TileType.WALL, Tile.TileType.WATER)
                         .build();
 
-                assertThat(editedGrid).isEqualTo(grid);
+                assertThat(editedTileGrid).isEqualTo(tileGrid);
             }
         }
 
@@ -195,16 +195,16 @@ class GridTest {
 
             @Test
             void floodFillRequiresTileTypeParameter() {
-                Grid grid = Grid.builder().build();
+                TileGrid tileGrid = TileGrid.builder().build();
 
                 assertThatExceptionOfType(NullPointerException.class)
-                        .isThrownBy(() -> grid.edit()
+                        .isThrownBy(() -> tileGrid.edit()
                                 .floodFill(0, 0, Tile.TileType.EMPTY, null)
                                 .build())
                         .withMessage("TileType to fill is required");
 
                 assertThatExceptionOfType(NullPointerException.class)
-                        .isThrownBy(() -> grid.edit()
+                        .isThrownBy(() -> tileGrid.edit()
                                 .floodFill(0, 0, null, Tile.TileType.WALL)
                                 .build())
                         .withMessage("TileType to replace is required");
@@ -212,15 +212,15 @@ class GridTest {
 
             @Test
             void floodFillReturnsSameGridIfCoordinatesInvalid() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(4, 4)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .floodFill(-1, 0, Tile.TileType.EMPTY, Tile.TileType.WATER)
                         .build();
 
-                assertThat(editedGrid).isEqualTo(grid);
+                assertThat(editedTileGrid).isEqualTo(tileGrid);
             }
 
             @Test
@@ -232,23 +232,23 @@ class GridTest {
                         {new Tile(Tile.TileType.WALL), new Tile(Tile.TileType.EMPTY), new Tile(Tile.TileType.WALL), new Tile(Tile.TileType.EMPTY)}
                 };
 
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withTiles(tiles)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .floodFill(0, 0, Tile.TileType.EMPTY, Tile.TileType.WATER)
                         .build();
 
-                for (int row = 0; row < grid.getRows(); row++) {
-                    for (int col = 0; col < grid.getCols(); col++) {
+                for (int row = 0; row < tileGrid.getRows(); row++) {
+                    for (int col = 0; col < tileGrid.getCols(); col++) {
                         if ((col == 0 && row == 0) || (col == 1 && row == 0) || (col == 0 && row == 1) ||
                             (col == 0 && row == 2) || (col == 1 && row == 2) || (col == 1 && row == 3)) {
-                            assertThat(editedGrid.getTile(col, row).type())
+                            assertThat(editedTileGrid.getTile(col, row).type())
                                     .as("Tile at (%d, %d)", col, row)
                                     .isEqualTo(Tile.TileType.WATER);
                         } else {
-                            assertThat(editedGrid.getTile(col, row).type()).isEqualTo(grid.getTile(col, row).type());
+                            assertThat(editedTileGrid.getTile(col, row).type()).isEqualTo(tileGrid.getTile(col, row).type());
                         }
                     }
                 }
@@ -262,15 +262,15 @@ class GridTest {
                         {new Tile(Tile.TileType.WALL), new Tile(Tile.TileType.WALL), new Tile(Tile.TileType.WALL)}
                 };
 
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withTiles(tiles)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .floodFill(1, 1, Tile.TileType.EMPTY, Tile.TileType.WATER)
                         .build();
 
-                assertThat(editedGrid).isEqualTo(grid);
+                assertThat(editedTileGrid).isEqualTo(tileGrid);
             }
         }
 
@@ -279,10 +279,10 @@ class GridTest {
 
             @Test
             void drawRectangleRequiresTileTypeParameter() {
-                Grid grid = Grid.builder().build();
+                TileGrid tileGrid = TileGrid.builder().build();
 
                 assertThatExceptionOfType(NullPointerException.class)
-                        .isThrownBy(() -> grid.edit()
+                        .isThrownBy(() -> tileGrid.edit()
                                 .drawRectangle(0, 0, 2, 2, null)
                                 .build())
                         .withMessage("TileType to draw is required");
@@ -290,24 +290,24 @@ class GridTest {
 
             @Test
             void drawRectangleReturnsNewGridInstanceWithRectangleDrawn() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(5, 5)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawRectangle(1, 1, 3, 3, Tile.TileType.WALL)
                         .build();
 
-                for (int row = 0; row < grid.getRows(); row++) {
-                    for (int col = 0; col < grid.getCols(); col++) {
+                for (int row = 0; row < tileGrid.getRows(); row++) {
+                    for (int col = 0; col < tileGrid.getCols(); col++) {
                         if (col >= 1 && col <= 3 && row >= 1 && row <= 3) {
-                            assertThat(editedGrid.getTile(col, row).type())
+                            assertThat(editedTileGrid.getTile(col, row).type())
                                     .as("Tile at (%d, %d)", col, row)
                                     .isEqualTo(Tile.TileType.WALL);
                         } else {
-                            assertThat(editedGrid.getTile(col, row).type())
+                            assertThat(editedTileGrid.getTile(col, row).type())
                                     .as("Tile at (%d, %d)", col, row)
-                                    .isEqualTo(grid.getTile(col, row).type());
+                                    .isEqualTo(tileGrid.getTile(col, row).type());
                         }
                     }
                 }
@@ -315,15 +315,15 @@ class GridTest {
 
             @Test
             void drawRectangleReturnsSameGridIfRectangleIsOutOfBounds() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(5, 5)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawRectangle(-1, -1, 6, 6, Tile.TileType.WALL)
                         .build();
 
-                assertThat(editedGrid).isEqualTo(grid);
+                assertThat(editedTileGrid).isEqualTo(tileGrid);
             }
 
             @Test
@@ -334,37 +334,37 @@ class GridTest {
                         {new Tile(Tile.TileType.WALL), new Tile(Tile.TileType.WALL), new Tile(Tile.TileType.WALL)}
                 };
 
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withTiles(tiles)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawRectangle(0, 0, 2, 2, Tile.TileType.WALL)
                         .build();
 
-                assertThat(editedGrid).isEqualTo(grid);
+                assertThat(editedTileGrid).isEqualTo(tileGrid);
             }
 
             @Test
             void drawRectangleHandlesSingleTileRectangle() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(3, 3)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawRectangle(1, 2, 1, 1, Tile.TileType.WALL)
                         .build();
 
-                for (int row = 0; row < grid.getRows(); row++) {
-                    for (int col = 0; col < grid.getCols(); col++) {
+                for (int row = 0; row < tileGrid.getRows(); row++) {
+                    for (int col = 0; col < tileGrid.getCols(); col++) {
                         if (col == 1 && row == 2) {
-                            assertThat(editedGrid.getTile(col, row).type())
+                            assertThat(editedTileGrid.getTile(col, row).type())
                                     .as("Tile at (%d, %d)", col, row)
                                     .isEqualTo(Tile.TileType.WALL);
                         } else {
-                            assertThat(editedGrid.getTile(col, row).type())
+                            assertThat(editedTileGrid.getTile(col, row).type())
                                     .as("Tile at (%d, %d)", col, row)
-                                    .isEqualTo(grid.getTile(col, row).type());
+                                    .isEqualTo(tileGrid.getTile(col, row).type());
                         }
                     }
                 }
@@ -372,17 +372,17 @@ class GridTest {
 
             @Test
             void drawRectangleHandlesFullGridRectangle() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(2, 2)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawRectangle(0, 0, 2, 2, Tile.TileType.WALL)
                         .build();
 
-                for (int row = 0; row < grid.getRows(); row++) {
-                    for (int col = 0; col < grid.getCols(); col++) {
-                        assertThat(editedGrid.getTile(col, row).type())
+                for (int row = 0; row < tileGrid.getRows(); row++) {
+                    for (int col = 0; col < tileGrid.getCols(); col++) {
+                        assertThat(editedTileGrid.getTile(col, row).type())
                                 .as("Tile at (%d, %d)", col, row)
                                 .isEqualTo(Tile.TileType.WALL);
                     }
@@ -391,50 +391,50 @@ class GridTest {
 
             @Test
             void drawRectangleHandlesNegativeSizeGracefully() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(4, 4)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawRectangle(2, 2, -2, -1, Tile.TileType.WALL)
                         .build();
 
-                assertThat(editedGrid).isEqualTo(grid);
+                assertThat(editedTileGrid).isEqualTo(tileGrid);
             }
 
             @Test
             void drawRectangleHandlesZeroSizeGracefully() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(4, 4)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawRectangle(1, 1, 0, 0, Tile.TileType.WALL)
                         .build();
 
-                assertThat(editedGrid).isEqualTo(grid);
+                assertThat(editedTileGrid).isEqualTo(tileGrid);
             }
 
             @Test
             void drawRectangleHandlesSizeOutOfBoundsGracefully() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(4, 4)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawRectangle(2, 2, 5, 5, Tile.TileType.WALL)
                         .build();
 
-                for (int row = 0; row < grid.getRows(); row++) {
-                    for (int col = 0; col < grid.getCols(); col++) {
+                for (int row = 0; row < tileGrid.getRows(); row++) {
+                    for (int col = 0; col < tileGrid.getCols(); col++) {
                         if (col >= 2 && row >= 2) {
-                            assertThat(editedGrid.getTile(col, row).type())
+                            assertThat(editedTileGrid.getTile(col, row).type())
                                     .as("Tile at (%d, %d)", col, row)
                                     .isEqualTo(Tile.TileType.WALL);
                         } else {
-                            assertThat(editedGrid.getTile(col, row).type())
+                            assertThat(editedTileGrid.getTile(col, row).type())
                                     .as("Tile at (%d, %d)", col, row)
-                                    .isEqualTo(grid.getTile(col, row).type());
+                                    .isEqualTo(tileGrid.getTile(col, row).type());
                         }
                     }
                 }
@@ -446,10 +446,10 @@ class GridTest {
 
             @Test
             void drawCircleRequiresTileTypeParameter() {
-                Grid grid = Grid.builder().build();
+                TileGrid tileGrid = TileGrid.builder().build();
 
                 assertThatExceptionOfType(NullPointerException.class)
-                        .isThrownBy(() -> grid.edit()
+                        .isThrownBy(() -> tileGrid.edit()
                                 .drawCircle(2, 2, 2, null)
                                 .build())
                         .withMessage("TileType to draw is required");
@@ -457,26 +457,26 @@ class GridTest {
 
             @Test
             void drawCircleReturnsNewGridInstanceWithCircleDrawn() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(6, 6)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawCircle(2, 3, 2, Tile.TileType.WALL)
                         .build();
 
-                for (int row = 0; row < grid.getRows(); row++) {
-                    for (int col = 0; col < grid.getCols(); col++) {
+                for (int row = 0; row < tileGrid.getRows(); row++) {
+                    for (int col = 0; col < tileGrid.getCols(); col++) {
                         int dx = col - 2;
                         int dy = row - 3;
                         if ((dx * dx + dy * dy) <= (2 * 2)) {
-                            assertThat(editedGrid.getTile(col, row).type())
+                            assertThat(editedTileGrid.getTile(col, row).type())
                                     .as("Tile at (%d, %d)", col, row)
                                     .isEqualTo(Tile.TileType.WALL);
                         } else {
-                            assertThat(editedGrid.getTile(col, row).type())
+                            assertThat(editedTileGrid.getTile(col, row).type())
                                     .as("Tile at (%d, %d)", col, row)
-                                    .isEqualTo(grid.getTile(col, row).type());
+                                    .isEqualTo(tileGrid.getTile(col, row).type());
                         }
                     }
                 }
@@ -484,15 +484,15 @@ class GridTest {
 
             @Test
             void drawCircleReturnsSameGridIfCircleIsOutOfBounds() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(5, 8)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawCircle(-3, -3, 2, Tile.TileType.WALL)
                         .build();
 
-                assertThat(editedGrid).isEqualTo(grid);
+                assertThat(editedTileGrid).isEqualTo(tileGrid);
             }
 
             @Test
@@ -503,43 +503,43 @@ class GridTest {
                         {new Tile(Tile.TileType.WALL), new Tile(Tile.TileType.WALL), new Tile(Tile.TileType.WALL)}
                 };
 
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withTiles(tiles)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawCircle(1, 1, 2, Tile.TileType.WALL)
                         .build();
 
-                assertThat(editedGrid).isEqualTo(grid);
+                assertThat(editedTileGrid).isEqualTo(tileGrid);
             }
 
             @Test
             void drawCircleHandlesZeroRadiusGracefully() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(4, 4)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawCircle(2, 2, 0, Tile.TileType.WALL)
                         .build();
 
-                assertThat(editedGrid).isEqualTo(grid);
+                assertThat(editedTileGrid).isEqualTo(tileGrid);
             }
 
             @Test
             void drawCircleHandlesLargeRadiusGracefully() {
-                Grid grid = Grid.builder()
+                TileGrid tileGrid = TileGrid.builder()
                         .withDimensions(4, 4)
                         .build();
 
-                Grid editedGrid = grid.edit()
+                TileGrid editedTileGrid = tileGrid.edit()
                         .drawCircle(2, 2, 10, Tile.TileType.WALL)
                         .build();
 
-                for (int row = 0; row < grid.getRows(); row++) {
-                    for (int col = 0; col < grid.getCols(); col++) {
-                        assertThat(editedGrid.getTile(col, row).type())
+                for (int row = 0; row < tileGrid.getRows(); row++) {
+                    for (int col = 0; col < tileGrid.getCols(); col++) {
+                        assertThat(editedTileGrid.getTile(col, row).type())
                                 .as("Tile at (%d, %d)", col, row)
                                 .isEqualTo(Tile.TileType.WALL);
                     }

@@ -75,7 +75,7 @@ src/main/java/lucas/games/brogue/backend/
 ├── systems/            # Logic engines (AI, FOV)
 ├── views/              # Text-based rendering and logs
 ├── BrogueColor.java    # Lighting math
-├── DungeonLevel.java   # The grid data structure
+├── DungeonLevel.java   # The tileGrid data structure
 └── GameManager.java    # The main game controller
 ```
 
