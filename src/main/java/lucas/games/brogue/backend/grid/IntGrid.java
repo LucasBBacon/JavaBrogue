@@ -1,187 +1,130 @@
-package lucas.games.brogue.backend;
+package lucas.games.brogue.backend.grid;
 
+import io.vavr.Function1;
 import io.vavr.collection.Vector;
-
-import java.util.Objects;
+import lucas.games.brogue.backend.Position;
+import lucas.games.brogue.backend.Random;
 
 import static java.util.Objects.requireNonNull;
+import static lucas.games.brogue.backend.grid.Constants.COLS;
+import static lucas.games.brogue.backend.grid.Constants.ROWS;
 
-public class IntGrid implements Grid<Integer> {
+public class IntGrid extends Grid<Integer> {
 
-    private final int cols;
-    private final int rows;
-    private final Vector<Integer> cells;
     private final Random random = new Random();
 
-    private IntGrid(final Builder builder) {
-        this.cols = builder.cols;
-        this.rows = builder.rows;
-        this.cells = builder.cells;
+    private IntGrid(int cols, int rows, Vector<Integer> cells) {
+        super(cols, rows, cells);
     }
 
-    public int validLocationCount(Integer validValue) {
+    @Override
+    protected Grid<Integer> newInstance(Vector<Integer> newCells) {
+        return new IntGrid(cols, rows, newCells);
+    }
+
+    // =================================================================================================================
+    // STATIC FACTORIES
+    // =================================================================================================================
+
+    public static IntGrid defaultGrid() {
+        return filled(COLS, ROWS, 0);
+    }
+
+    public static IntGrid empty(int cols, int rows) {
+        return new IntGrid(cols, rows, Vector.empty());
+    }
+
+    public static IntGrid of(int cols, int rows, Integer... values) {
+        return new IntGrid(cols, rows, Vector.of(values));
+    }
+
+    public static IntGrid of(int cols, int rows, Vector<Integer> values) {
+        return new IntGrid(cols, rows, values);
+    }
+
+    public static IntGrid filled(int cols, int rows, Integer fillValue) {
+        requireNonNull(fillValue, "Fill value must not be null");
+        if (fillValue < 0) {
+            throw new IllegalArgumentException("Fill value must be non-negative");
+        }
+        if (cols <= 0 || rows <= 0) {
+            throw new IllegalArgumentException("Grid dimensions must be positive");
+        }
+        return new IntGrid(cols, rows, Vector.fill(cols * rows, fillValue));
+    }
+
+    // =================================================================================================================
+    // COVARIANT OVERRIDES
+    // =================================================================================================================
+
+    @Override
+    public IntGrid set(int col, int row, Integer value) {
+        return (IntGrid) super.set(col, row, value);
+    }
+
+    @Override
+    public IntGrid set(Position position, Integer value) {
+        return (IntGrid) super.set(position, value);
+    }
+
+    @Override
+    public IntGrid updateAll(Function1<Integer, Integer> mapper) {
+        return (IntGrid) super.updateAll(mapper);
+    }
+
+    // =================================================================================================================
+    // TYPE-SPECIFIC METHODS
+    // =================================================================================================================
+
+    public int validLocationCount(final Integer validValue) {
         requireNonNull(validValue, "Valid value must not be null");
-        return (int) cells.filter(cell -> cell.equals(validValue)).size();
+        return cells.filter(cell -> cell.equals(validValue)).size();
     }
 
     public int leastPositiveValue() {
         return cells.filter(cell -> cell > 0).min().getOrElse(0);
     }
 
-    public Position randomLocation(Integer validValue) {
+    public Position randomLocation(final Integer validValue) {
         requireNonNull(validValue, "Valid value must not be null");
-        int row = -1;
-        int col = -1;
 
-        int locationCount = validLocationCount(validValue);
-        if (locationCount <= 0) {
-            return new Position(col, row);
+        Vector<Integer> validIndices = cells.zipWithIndex()
+                .filter(tuple -> tuple._1.equals(validValue))
+                .map(tuple -> tuple._2)
+                .toVector();
+
+        if (validIndices.isEmpty()) {
+            return new Position(-1, -1);
         }
 
-        int index = random.randomRange(0, locationCount - 1);
-        for (int i = 0; i < cells.size(); i++) {
-            if (cells.get(i).equals(validValue)) {
-                if (index == 0) {
-                    row = i / cols;
-                    col = i % cols;
-                }
-                index--;
-            }
-        }
-        return new Position(col, row);
+        int randomIndex = random.randomRange(0, validIndices.size() - 1);
+        int cellIndex = validIndices.get(randomIndex);
+        return new Position(cellIndex % cols, cellIndex / cols);
     }
 
-    public Position randomLeastPositiveLocation(boolean deterministic) {
+    public Position randomLeastPositiveLocation(final boolean deterministic) {
         int targetValue = leastPositiveValue();
         if (targetValue == 0) {
             return new Position(-1, -1);
         }
 
-        int locationCount = 0;
-        for (Integer cell : cells) {
-            if (cell.equals(targetValue)) {
-                locationCount++;
-            }
+        Vector<Integer> validIndices = cells.zipWithIndex()
+                .filter(tuple -> tuple._1.equals(targetValue))
+                .map(tuple -> tuple._2)
+                .toVector();
+
+        if (validIndices.isEmpty()) {
+            return new Position(-1, -1);
         }
 
-        int index;
-        if (deterministic) {
-            index = locationCount / 2;
-        } else {
-            index = random.randomRange(0, locationCount - 1);
-        }
-
-        for (int i = 0; i < cells.size(); i++) {
-            if (cells.get(i).equals(targetValue)) {
-                if (index == 0) {
-                    int row = i / cols;
-                    int col = i % cols;
-                    return new Position(col, row);
-                }
-                index--;
-            }
-        }
-        // Should not be reachable, since we should already have hit the unique index == 0 point
-        return new Position(-1, -1);
+        int index = deterministic ? validIndices.size() / 2 : random.randomRange(0, validIndices.size() - 1);
+        int cellIndex = validIndices.get(index);
+        return new Position(cellIndex % cols, cellIndex / cols);
     }
 
-    @Override
-    public int getCols() {
-        return cols;
-    }
-
-    @Override
-    public int getRows() {
-        return rows;
-    }
-
-    @Override
-    public boolean isInBounds(final int col, final int row) {
-        return col >= 0 && col < cols && row >= 0 && row < rows;
-    }
-
-    @Override
-    public boolean isInBounds(final Position position) {
-        return isInBounds(position.col(), position.row());
-    }
-
-    @Override
-    public Integer get(int col, int row) {
-        return cells.get(row * cols + col);
-    }
-
-    @Override
-    public Integer get(Position position) {
-        return Grid.super.get(position);
-    }
-
-    @Override
-    public Grid<Integer> copy() {
-        return new IntGrid.Builder()
-                .withDimensions(cols, rows)
-                .withCells(cells)
-                .build();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-        IntGrid intGrid = (IntGrid) o;
-        return cols == intGrid.cols && rows == intGrid.rows && Objects.equals(cells, intGrid.cells);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(cols, rows, cells);
-    }
-
-    @Override
-    public String toString() {
-        return cells
-                .grouped(cols)
-                .map(rowCells -> rowCells.mkString(" "))
-                .mkString(System.lineSeparator());
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-
-        private int cols = 10;
-        private int rows = 20;
-        private Vector<Integer> cells;
-
-        public Builder withDimensions(final int cols, final int rows) {
-            if (cols < 0 || rows < 0) {
-                throw new IllegalArgumentException("cols and rows must be non-negative");
-            }
-
-            this.cols = cols;
-            this.rows = rows;
-            this.cells = Vector.fill(cols * rows, 0);
-            return this;
-        }
-
-        public Builder withCells(final Vector<Integer> cells) {
-            requireNonNull(cells, "cells must not be null");
-
-            if (cells.size() != cols * rows) {
-                throw new IllegalArgumentException("cells size must be equal to cols * rows");
-            }
-
-            this.cells = Vector.ofAll(cells);
-            return this;
-        }
-
-        public IntGrid build() {
-            if (cells == null || cells.isEmpty()) {
-                this.cells = Vector.fill(cols * rows, 0);
-            }
-            return new IntGrid(this);
-        }
-    }
+    // =================================================================================================================
+    // EDITOR
+    // =================================================================================================================
 
     public Edit edit() {
         return new Edit(this);
@@ -193,10 +136,6 @@ public class IntGrid implements Grid<Integer> {
         private final int rows;
         private Vector<Integer> cells;
 
-        private static final Integer[][] NB_DIRS = {
-                {0,-1}, {0,1}, {-1,0}, {1,0}, {-1,-1}, {-1,1}, {1,-1}, {1,1}
-        };
-
         private Edit(final IntGrid intGrid) {
             this.cols = intGrid.cols;
             this.rows = intGrid.rows;
@@ -205,10 +144,6 @@ public class IntGrid implements Grid<Integer> {
 
         private boolean isInBounds(final int col, final int row) {
             return col >= 0 && col < cols && row >= 0 && row < rows;
-        }
-
-        private void setCell(final int col, final int row, final Integer value) {
-            cells = cells.update(row * cols + col, value);
         }
 
         public Edit fill(final Integer value) {
@@ -288,10 +223,11 @@ public class IntGrid implements Grid<Integer> {
                 throw new IllegalArgumentException("Starting position is out of bounds");
             }
 
-            setCell(col, row, fillValue);
+           this.cells = this.cells.update(row * cols + col, fillValue);
+
             for (int direction = 0; direction < 4; direction++) {
-                int newRow = row + NB_DIRS[direction][0];
-                int newCol = col + NB_DIRS[direction][1];
+                int newRow = row + Constants.NB_DIRS[direction][0];
+                int newCol = col + Constants.NB_DIRS[direction][1];
 
                 if (isInBounds(newCol, newRow) &&
                     cells.get(newRow * cols + newCol) >= eligibleValueMin &&
@@ -362,21 +298,22 @@ public class IntGrid implements Grid<Integer> {
             final int maxRow = Math.min(rows - 1, centerRow + radius);
             final int threshold = radius * radius + radius;
 
-            Vector<Integer> updatedCells = cells.zipWithIndex().map(t -> {
-                Integer current = t._1;
-                int cellIndex = t._2;
-                int cellRow = cellIndex / cols;
-                int cellCol = cellIndex % cols;
+            Vector<Integer> updatedCells = cells.zipWithIndex()
+                    .map(t -> {
+                        Integer current = t._1;
+                        int cellIndex = t._2;
+                        int cellRow = cellIndex / cols;
+                        int cellCol = cellIndex % cols;
 
-                if (cellCol >= minCol && cellCol <= maxCol && cellRow >= minRow && cellRow <= maxRow) {
-                    int dx = cellCol - centerCol;
-                    int dy = cellRow - centerRow;
-                    if (dx * dx + dy * dy <= threshold) {
-                        return fillValue;
-                    }
-                }
-                return current;
-            });
+                        if (cellCol >= minCol && cellCol <= maxCol && cellRow >= minRow && cellRow <= maxRow) {
+                            int dx = cellCol - centerCol;
+                            int dy = cellRow - centerRow;
+                            if (dx * dx + dy * dy <= threshold) {
+                                return fillValue;
+                            }
+                        }
+                        return current;
+                    });
 
             if (updatedCells.equals(cells)) return this;
 
@@ -385,10 +322,7 @@ public class IntGrid implements Grid<Integer> {
         }
 
         public IntGrid build() {
-            return new IntGrid.Builder()
-                    .withDimensions(cols, rows)
-                    .withCells(cells)
-                    .build();
+            return IntGrid.of(cols, rows, cells);
         }
     }
 }

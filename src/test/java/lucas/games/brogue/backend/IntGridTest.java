@@ -1,6 +1,7 @@
 package lucas.games.brogue.backend;
 
 import io.vavr.collection.Vector;
+import lucas.games.brogue.backend.grid.IntGrid;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -14,10 +15,7 @@ class IntGridTest {
 
         @Test
         void testBuildIntGridReturnsNonNullGrid() {
-            IntGrid grid = IntGrid.builder()
-                    .withDimensions(5, 5)
-                    .withCells(io.vavr.collection.Vector.fill(25, 0))
-                    .build();
+            IntGrid grid = IntGrid.filled(5, 5, 0);
 
             assertThat(grid).isNotNull();
         }
@@ -25,50 +23,28 @@ class IntGridTest {
         @Test
         void testBuildIntGridWithNullCellsThrowsException() {
             assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
-                IntGrid.builder()
-                        .withDimensions(5, 5)
-                        .withCells(null)
-                        .build();
-            }).withMessage("cells must not be null");
-        }
-
-        @Test
-        void testBuildIntGridWithIncorrectCellCountThrowsException() {
-            assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
-                IntGrid.builder()
-                        .withDimensions(5, 5)
-                        .withCells(io.vavr.collection.Vector.fill(20, 0)) // Incorrect size
-                        .build();
-            }).withMessage("cells size must be equal to cols * rows");
+                IntGrid.filled(5, 5, null);
+            }).withMessage("Fill value must not be null");
         }
 
         @Test
         void testBuildIntGridWithNegativeDimensionsThrowsException() {
-            assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
-                IntGrid.builder()
-                        .withDimensions(-5, 5)
-                        .withCells(io.vavr.collection.Vector.fill(25, 0))
-                        .build();
-            }).withMessage("cols and rows must be non-negative");
+            assertThatExceptionOfType(IllegalArgumentException.class)
+                    .isThrownBy(() -> IntGrid.filled(-5, 5, 0))
+                    .withMessage("Grid dimensions must be positive");
         }
 
         @Test
-        void testBuildIntGridWithZeroDimensionsCreatesEmptyGrid() {
-            IntGrid grid = IntGrid.builder()
-                    .withDimensions(0, 0)
-                    .withCells(io.vavr.collection.Vector.empty())
-                    .build();
+        void testBuildIntGridWithZeroDimensionsThrowsException() {
+            assertThatExceptionOfType(IllegalArgumentException.class)
+                    .isThrownBy(() -> IntGrid.filled(0, 0, 0))
+                    .withMessage("Grid dimensions must be positive");
 
-            assertThat(grid.getCols()).isEqualTo(0);
-            assertThat(grid.getRows()).isEqualTo(0);
         }
 
         @Test
         void testBuildIntGridWithValidParametersCreatesGrid() {
-            IntGrid grid = IntGrid.builder()
-                    .withDimensions(3, 3)
-                    .withCells(io.vavr.collection.Vector.of(1, 2, 3, 4, 5, 6, 7, 8, 9))
-                    .build();
+            IntGrid grid = IntGrid.of(3, 3, Vector.of(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
             assertThat(grid.getCols()).isEqualTo(3);
             assertThat(grid.getRows()).isEqualTo(3);
@@ -78,10 +54,10 @@ class IntGridTest {
 
         @Test
         void testBuildIntGridUsesDefaultParameters() {
-            IntGrid grid = IntGrid.builder().build();
+            IntGrid grid = IntGrid.defaultGrid();
 
-            assertThat(grid.getCols()).isEqualTo(10);
-            assertThat(grid.getRows()).isEqualTo(20);
+            assertThat(grid.getCols()).isEqualTo(80);
+            assertThat(grid.getRows()).isEqualTo(21);
             assertThat(grid.get(0, 0)).isEqualTo(0);
         }
     }
@@ -91,7 +67,7 @@ class IntGridTest {
 
         @Test
         void editCreatesAnImmutableCopyOfGrid() {
-            IntGrid originalGrid = IntGrid.builder().build();
+            IntGrid originalGrid = IntGrid.defaultGrid();
             IntGrid editedGrid = originalGrid.edit().build();
 
             assertThat(editedGrid).isEqualTo(originalGrid);
@@ -99,7 +75,7 @@ class IntGridTest {
 
         @Test
         void editModificationsDoNotAffectOriginalGrid() {
-            IntGrid originalGrid = IntGrid.builder().build();
+            IntGrid originalGrid = IntGrid.defaultGrid();
             IntGrid editedGrid = originalGrid.edit()
                     .fill(42)
                     .build();
@@ -114,10 +90,7 @@ class IntGridTest {
 
             @Test
             void fillRequiresNonNullValue() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(2, 2)
-                        .withCells(io.vavr.collection.Vector.fill(4, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(2, 2, 0);
 
                 assertThatExceptionOfType(NullPointerException.class).isThrownBy(() ->
                         grid.edit()
@@ -126,26 +99,8 @@ class IntGridTest {
             }
 
             @Test
-            void fillOnEmptyGridDoesNothing() {
-                IntGrid emptyGrid = IntGrid.builder()
-                        .withDimensions(0, 0)
-                        .withCells(io.vavr.collection.Vector.empty())
-                        .build();
-
-                IntGrid editedGrid = emptyGrid.edit()
-                        .fill(5)
-                        .build();
-
-                assertThat(editedGrid.getCols()).isEqualTo(0);
-                assertThat(editedGrid.getRows()).isEqualTo(0);
-            }
-
-            @Test
             void fillOnSingleCellGridSetsCellToSpecifiedValue() {
-                IntGrid singleCellGrid = IntGrid.builder()
-                        .withDimensions(1, 1)
-                        .withCells(io.vavr.collection.Vector.of(0))
-                        .build();
+                IntGrid singleCellGrid = IntGrid.filled(1, 1, 0);
 
                 IntGrid editedGrid = singleCellGrid.edit()
                         .fill(9)
@@ -156,10 +111,7 @@ class IntGridTest {
 
             @Test
             void fillSetsAllCellsToSpecifiedValue() {
-                IntGrid editedGrid = IntGrid.builder()
-                        .withDimensions(3, 3)
-                        .withCells(io.vavr.collection.Vector.fill(9, 0))
-                        .build()
+                IntGrid editedGrid = IntGrid.filled(3, 3, 0)
                         .edit()
                         .fill(7)
                         .build();
@@ -173,10 +125,7 @@ class IntGridTest {
 
             @Test
             void fillWithNegativeValuesThrowsException() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(2, 2)
-                        .withCells(io.vavr.collection.Vector.fill(4, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(2, 2, 0);
 
                 assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() ->
                         grid.edit()
@@ -190,7 +139,7 @@ class IntGridTest {
 
             @Test
             void findReplaceRequiresNonNullParameters() {
-                IntGrid grid = IntGrid.builder().build();
+                IntGrid grid = IntGrid.defaultGrid();
 
                 assertThatExceptionOfType(NullPointerException.class)
                         .isThrownBy(() -> grid.edit()
@@ -213,10 +162,7 @@ class IntGridTest {
 
             @Test
             void findReplaceWithNegativeValuesThrowsException() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(2, 2)
-                        .withCells(io.vavr.collection.Vector.fill(4, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(2, 2, 0);
 
                 assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() ->
                         grid.edit()
@@ -236,13 +182,10 @@ class IntGridTest {
 
             @Test
             void findReplaceReplacesValuesInRange() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(3, 3)
-                        .withCells(io.vavr.collection.Vector.of(
-                                1, 2, 3,
-                                4, 5, 6,
-                                7, 2, 4))
-                        .build();
+                IntGrid grid = IntGrid.of(3, 3,
+                        1, 2, 3,
+                        4, 5, 6,
+                        7, 2, 4);
 
                 IntGrid edited = grid.edit()
                         .findReplace(2, 4, 9)
@@ -252,17 +195,16 @@ class IntGridTest {
                     for (int col = 0; col < 3; col++) {
                         int original = grid.get(col, row);
                         int expected = (original >= 2 && original <= 4) ? 9 : original;
-                        assertThat(edited.get(col, row)).as("(%d,%d)", col, row).isEqualTo(expected);
+                        assertThat(edited.get(col, row))
+                                .as("(%d,%d)", col, row)
+                                .isEqualTo(expected);
                     }
                 }
             }
 
             @Test
             void findReplaceReturnsSameGridWhenNoCellsAreReplaced() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(2, 2)
-                        .withCells(io.vavr.collection.Vector.fill(4, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(2, 2, 0);
 
                 IntGrid edited = grid.edit()
                         .findReplace(1, 2, 5)
@@ -272,26 +214,8 @@ class IntGridTest {
             }
 
             @Test
-            void findReplaceOnEmptyGridDoesNothing() {
-                IntGrid empty = IntGrid.builder()
-                        .withDimensions(0, 0)
-                        .withCells(io.vavr.collection.Vector.empty())
-                        .build();
-
-                IntGrid edited = empty.edit()
-                        .findReplace(0, 10, 5)
-                        .build();
-
-                assertThat(edited.getCols()).isEqualTo(0);
-                assertThat(edited.getRows()).isEqualTo(0);
-            }
-
-            @Test
             void findReplaceHandlesSingleCellGrid() {
-                IntGrid single = IntGrid.builder()
-                        .withDimensions(1, 1)
-                        .withCells(io.vavr.collection.Vector.of(3))
-                        .build();
+                IntGrid single = IntGrid.of(1, 1, 3);
 
                 IntGrid edited = single.edit()
                         .findReplace(3, 3, 7)
@@ -302,10 +226,7 @@ class IntGridTest {
 
             @Test
             void findReplaceWithMinGreaterThanMaxThrowsException() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(2, 2)
-                        .withCells(io.vavr.collection.Vector.fill(4, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(2, 2, 0);
 
                 assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() ->
                         grid.edit()
@@ -319,7 +240,7 @@ class IntGridTest {
 
             @Test
             void floodFillRequiresNonNullParameters() {
-                IntGrid grid = IntGrid.builder().build();
+                IntGrid grid = IntGrid.defaultGrid();
 
                 // Position overload requires non-null position
                 assertThatExceptionOfType(NullPointerException.class)
@@ -350,10 +271,7 @@ class IntGridTest {
 
             @Test
             void floodFillWithNegativeValuesThrowsException() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(2, 2)
-                        .withCells(io.vavr.collection.Vector.fill(4, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(2, 2, 0);
 
                 assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() ->
                         grid.edit()
@@ -373,10 +291,7 @@ class IntGridTest {
 
             @Test
             void floodFillWithMinGreaterThanMaxThrowsException() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(2, 2)
-                        .withCells(io.vavr.collection.Vector.fill(4, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(2, 2, 0);
 
                 assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() ->
                         grid.edit()
@@ -386,13 +301,10 @@ class IntGridTest {
 
             @Test
             void floodFillRequiresFillValueOutsideEligibleRange() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(3, 3)
-                        .withCells(io.vavr.collection.Vector.of(
+                IntGrid grid = IntGrid.of(3, 3,
                                 0, 1, 0,
                                 1, 0, 1,
-                                0, 1, 0))
-                        .build();
+                                0, 1, 0);
 
                 // fillValue inside eligible range should be rejected
                 assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() ->
@@ -403,10 +315,7 @@ class IntGridTest {
 
             @Test
             void floodFillStartingPositionOutOfBoundsThrowsException() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(3, 3)
-                        .withCells(io.vavr.collection.Vector.fill(9, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(3, 3, 0);
 
                 assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() ->
                         grid.edit()
@@ -424,10 +333,7 @@ class IntGridTest {
                         1, 0, 1, 0
                 );
 
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(4, 4)
-                        .withCells(cells)
-                        .build();
+                IntGrid grid = IntGrid.of(4, 4, cells);
 
                 IntGrid edited = grid.edit()
                         .floodFill(0, 0, 0, 0, 9) // replace eligible (0) with 9
@@ -456,13 +362,9 @@ class IntGridTest {
             @Test
             void floodFillReturnsGridWithASingleCellReplacedIfNoValuesMatch() {
                 // grid with no eligible cells (all walls = 1)
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(3, 3)
-                        .withCells(io.vavr.collection.Vector.fill(9, 1))
-                        .build();
-                IntGrid expectedGrid = IntGrid.builder().withDimensions(3, 3)
-                        .withCells(io.vavr.collection.Vector.fill(9, 1).update(4, 2))
-                        .build();
+                IntGrid grid = IntGrid.filled(3, 3, 1);
+                IntGrid expectedGrid = IntGrid.of(3, 3,
+                        Vector.fill(9, 1).update(4, 2));
 
                 IntGrid edited = grid.edit()
                         .floodFill(1, 1, 0, 0, 2)
@@ -477,7 +379,7 @@ class IntGridTest {
 
             @Test
             void drawRectangleRequiresNonNullValue() {
-                IntGrid grid = IntGrid.builder().build();
+                IntGrid grid = IntGrid.defaultGrid();
 
                 assertThatExceptionOfType(NullPointerException.class)
                         .isThrownBy(() -> grid.edit()
@@ -488,10 +390,7 @@ class IntGridTest {
 
             @Test
             void drawRectangleRequiresNonNegativeValue() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(2, 2)
-                        .withCells(io.vavr.collection.Vector.fill(4, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(2, 2, 0);
 
                 assertThatExceptionOfType(IllegalArgumentException.class)
                         .isThrownBy(() -> grid.edit()
@@ -502,9 +401,7 @@ class IntGridTest {
 
             @Test
             void drawRectangleThrowsIfStartingPositionOutOfBounds() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(2, 2)
-                        .build();
+                IntGrid grid = IntGrid.filled(2, 2, 0);
 
                 assertThatExceptionOfType(IllegalArgumentException.class)
                         .isThrownBy(() -> grid.edit()
@@ -515,10 +412,7 @@ class IntGridTest {
 
             @Test
             void drawRectangleReturnsNewGridInstanceWithRectangleDrawn() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(5, 5)
-                        .withCells(io.vavr.collection.Vector.fill(25, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(5, 5, 0);
 
                 IntGrid edited = grid.edit()
                         .drawRectangle(1, 1, 3, 3, 7)
@@ -537,10 +431,7 @@ class IntGridTest {
 
             @Test
             void drawRectangleReturnsSameGridIfNoCellsAreChanged() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(3, 3)
-                        .withCells(io.vavr.collection.Vector.fill(9, 5))
-                        .build();
+                IntGrid grid = IntGrid.filled(3, 3, 5);
 
                 IntGrid edited = grid.edit()
                         .drawRectangle(0, 0, 2, 2, 5)
@@ -551,10 +442,7 @@ class IntGridTest {
 
             @Test
             void drawRectangleHandlesSingleCellRectangle() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(3, 3)
-                        .withCells(io.vavr.collection.Vector.fill(9, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(3, 3, 0);
 
                 IntGrid edited = grid.edit()
                         .drawRectangle(1, 2, 1, 1, 9)
@@ -573,10 +461,7 @@ class IntGridTest {
 
             @Test
             void drawRectangleHandlesFullGridRectangle() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(2, 2)
-                        .withCells(io.vavr.collection.Vector.fill(4, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(2, 2, 0);
 
                 IntGrid edited = grid.edit()
                         .drawRectangle(0, 0, 2, 2, 4)
@@ -591,10 +476,7 @@ class IntGridTest {
 
             @Test
             void drawRectangleClipsWhenSizeExceedsBounds() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(4, 4)
-                        .withCells(io.vavr.collection.Vector.fill(16, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(4, 4, 0);
 
                 // start inside bounds but width/height extend beyond grid — should clip to grid
                 IntGrid edited = grid.edit()
@@ -614,9 +496,7 @@ class IntGridTest {
 
             @Test
             void drawRectangleWithNonPositiveSizeThrows() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(4, 4)
-                        .build();
+                IntGrid grid = IntGrid.filled(4, 4, 0);
 
                 assertThatExceptionOfType(IllegalArgumentException.class)
                         .isThrownBy(() -> grid.edit()
@@ -637,7 +517,7 @@ class IntGridTest {
 
             @Test
             void drawCircleRequiresNonNullValue() {
-                IntGrid grid = IntGrid.builder().build();
+                IntGrid grid = IntGrid.defaultGrid();
 
                 assertThatExceptionOfType(NullPointerException.class)
                         .isThrownBy(() -> grid.edit()
@@ -648,10 +528,7 @@ class IntGridTest {
 
             @Test
             void drawCircleRequiresNonNegativeValue() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(2, 2)
-                        .withCells(io.vavr.collection.Vector.fill(4, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(2, 2, 0);
 
                 assertThatExceptionOfType(IllegalArgumentException.class)
                         .isThrownBy(() -> grid.edit()
@@ -662,9 +539,7 @@ class IntGridTest {
 
             @Test
             void drawCircleThrowsIfCenterOutOfBounds() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(3, 3)
-                        .build();
+                IntGrid grid = IntGrid.filled(3, 3, 0);
 
                 assertThatExceptionOfType(IllegalArgumentException.class)
                         .isThrownBy(() -> grid.edit()
@@ -675,10 +550,7 @@ class IntGridTest {
 
             @Test
             void drawCircleReturnsNewGridInstanceWithCircleDrawn() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(6, 6)
-                        .withCells(io.vavr.collection.Vector.fill(36, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(6, 6, 0);
 
                 int centerCol = 2;
                 int centerRow = 3;
@@ -703,10 +575,7 @@ class IntGridTest {
 
             @Test
             void drawCircleReturnsSameGridIfNoCellsAreChanged() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(3, 3)
-                        .withCells(io.vavr.collection.Vector.fill(9, 5))
-                        .build();
+                IntGrid grid = IntGrid.filled(3, 3, 5);
 
                 IntGrid edited = grid.edit()
                         .drawCircle(1, 1, 2, 5)
@@ -717,9 +586,7 @@ class IntGridTest {
 
             @Test
             void drawCircleWithNonPositiveRadiusThrows() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(4, 4)
-                        .build();
+                IntGrid grid = IntGrid.filled(4, 4, 0);
 
                 assertThatExceptionOfType(IllegalArgumentException.class)
                         .isThrownBy(() -> grid.edit()
@@ -736,10 +603,7 @@ class IntGridTest {
 
             @Test
             void drawCircleHandlesLargeRadiusGracefully() {
-                IntGrid grid = IntGrid.builder()
-                        .withDimensions(4, 4)
-                        .withCells(io.vavr.collection.Vector.fill(16, 0))
-                        .build();
+                IntGrid grid = IntGrid.filled(4, 4, 0);
 
                 IntGrid edited = grid.edit()
                         .drawCircle(2, 2, 10, 9)
